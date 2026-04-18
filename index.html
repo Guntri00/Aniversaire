@@ -1712,13 +1712,14 @@ async function doUpload() {
       if (!uploadRes.ok) throw new Error(`Storage ${uploadRes.status}: ${await uploadRes.text()}`);
 
       const publicUrl = `${SB_URL}/storage/v1/object/public/${BUCKET}/${filename}`;
-      await fetch(`${SB_URL}/rest/v1/photos`, {
+      const dbRes = await fetch(`${SB_URL}/rest/v1/photos`, {
         method:'POST',
         mode:'cors',
         credentials:'omit',
         headers:{ 'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal' },
         body:JSON.stringify({ event_id:EVENT_ID, uploader_name:uploaderName, category:selectedCategory.id, storage_path:filename, public_url:publicUrl, uploaded_at:new Date().toISOString(), media_type: file._isVideo ? 'video' : 'image' })
       });
+      if (!dbRes.ok) throw new Error(`DB insert ${dbRes.status}: ${await dbRes.text()}`);
       done++; setProgress(done, total);
     } catch(err) { errors.push(file.name+': '+err.message); }
   }
@@ -1744,13 +1745,16 @@ async function refreshAllPhotos() {
     );
     if (!res.ok) return;
     allPhotos = await res.json();
-    // Si la galerie est visible et qu'une catégorie est ouverte, la rafraîchir
+    // Rafraîchir la vue active de la galerie (détail catégorie OU widgets principaux)
     const galPanel  = document.getElementById('panel-gallery');
     const catDetail = document.getElementById('gallery-detail');
-    if (galPanel && galPanel.classList.contains('on') &&
-        catDetail && catDetail.style.display !== 'none') {
-      const curCat = galPanel.dataset.currentCat;
-      if (curCat) openCategory(curCat);
+    if (galPanel && galPanel.classList.contains('on')) {
+      if (catDetail && catDetail.style.display !== 'none') {
+        const curCat = galPanel.dataset.currentCat;
+        if (curCat) openCategory(curCat);
+      } else {
+        loadGallery();
+      }
     }
   } catch(e) { console.warn('Refresh failed:', e); }
 }
@@ -2085,6 +2089,17 @@ const _cleanedBrokenIds = new Set();
 const _CLEANED_MAX = 500;
 async function cleanupBrokenMedia(id, category, tileEl) {
   if (!id) { if (tileEl) tileEl.style.display = 'none'; return; }
+  // Période de grâce : une photo fraîchement uploadée peut mettre quelques secondes
+  // à devenir accessible via son URL publique (cohérence différée Supabase Storage).
+  // On ne la supprime pas pendant 3 min — on masque juste la tuile.
+  const _p = Array.isArray(allPhotos) ? allPhotos.find(x => String(x.id) === String(id)) : null;
+  if (_p && _p.uploaded_at) {
+    const ageMs = Date.now() - new Date(_p.uploaded_at).getTime();
+    if (ageMs < 3 * 60 * 1000) {
+      if (tileEl) tileEl.style.display = 'none';
+      return;
+    }
+  }
   if (_cleanedBrokenIds.has(id)) {
     document.querySelectorAll(`[data-photo-id="${id}"]`).forEach(n => n.remove());
     return;
