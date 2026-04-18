@@ -1210,6 +1210,15 @@ const _cleanedBrokenIds = new Set();
 const _CLEANED_MAX = 500;
 async function cleanupBrokenMedia(id, tileEl){
   if(!id){ if(tileEl) tileEl.style.display='none'; return; }
+  // Période de grâce pour cohérence différée Supabase Storage
+  const _p = Array.isArray(allPhotos) ? allPhotos.find(x => String(x.id) === String(id)) : null;
+  if (_p && _p.uploaded_at) {
+    const ageMs = Date.now() - new Date(_p.uploaded_at).getTime();
+    if (ageMs < 3 * 60 * 1000) {
+      if (tileEl) tileEl.style.display = 'none';
+      return;
+    }
+  }
   if(_cleanedBrokenIds.has(id)){
     document.querySelectorAll(`[data-photo-id="${id}"]`).forEach(n=>n.remove());
     return;
