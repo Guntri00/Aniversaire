@@ -1510,6 +1510,50 @@ function ssClose() {
   }
 }
 
+// Ajouter une nouvelle photo au diaporama en cours (compteur auto)
+function ssOnPhotoInserted(p) {
+  if (!p || !p.id) return;
+  const overlayOpen = document.getElementById('ssOverlay')?.classList.contains('open');
+  if (!overlayOpen) return;
+  if (ssPhotos.some(x => String(x.id) === String(p.id))) return;
+  ssPhotos.push(p);
+  const numEl = document.getElementById('ssNum');
+  if (numEl) numEl.textContent = `${ssIndex + 1} / ${ssPhotos.length}`;
+}
+
+// Retirer une photo supprimée du diaporama en cours, sans interruption
+function ssOnPhotoDeleted(id) {
+  if (!id || !ssPhotos.length) return;
+  const overlayOpen = document.getElementById('ssOverlay')?.classList.contains('open');
+  if (!overlayOpen) { ssPhotos = []; return; }
+
+  const idx = ssPhotos.findIndex(p => String(p.id) === String(id));
+  if (idx === -1) return;
+
+  const wasCurrent = (idx === ssIndex);
+  ssPhotos.splice(idx, 1);
+
+  if (!ssPhotos.length) { ssClose(); return; }
+
+  if (idx < ssIndex) {
+    ssIndex -= 1;
+  } else if (wasCurrent) {
+    if (ssIndex >= ssPhotos.length) ssIndex = 0;
+    clearTimeout(ssTimer);
+    const currentLayer = document.getElementById('ssLayer' + (1 - ssActiveLayer));
+    if (currentLayer) {
+      const v = currentLayer.querySelector('video');
+      if (v) { v.pause(); v.onended = null; v.onerror = null; v.src = ''; }
+    }
+    ssShow(ssIndex);
+    ssStartTimer();
+    return;
+  }
+
+  const numEl = document.getElementById('ssNum');
+  if (numEl) numEl.textContent = `${ssIndex + 1} / ${ssPhotos.length}`;
+}
+
 // ── Fullscreen API ──
 function ssEnterFullscreen() {
   const el = document.getElementById('ssOverlay');
@@ -1735,13 +1779,15 @@ function startRealtimeInvite() {
     .channel('invite-photos')
     // DELETE sans filtre — payload.old n'a que l'id par défaut ; on vérifie contre allPhotos
     .on('postgres_changes', {
-      event: 'DELETE', schema: 'public', table: 'photos'
+      event: 'DELETE', schema: 'public', table: 'photos',
+      filter: `event_id=eq.${EVENT_ID}`
     }, (payload) => {
       const deletedId = payload.old && payload.old.id;
       if (!deletedId) return;
       if (!allPhotos.find(p => p.id === deletedId)) return;
       allPhotos = allPhotos.filter(p => p.id !== deletedId);
       removePhotoCardIncremental(deletedId);
+      try { ssOnPhotoDeleted(deletedId); } catch(_) {}
       updateUI();
     })
     .on('postgres_changes', {
@@ -1751,6 +1797,7 @@ function startRealtimeInvite() {
       if (payload.new && !allPhotos.find(p => p.id === payload.new.id)) {
         allPhotos.unshift(payload.new);
         addPhotoCardIncremental(payload.new);
+        try { ssOnPhotoInserted(payload.new); } catch(_) {}
         updateUI();
       }
     })
