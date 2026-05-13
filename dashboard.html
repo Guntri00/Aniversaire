@@ -592,14 +592,14 @@ async function toggleVideo() {
   const enabled = chk ? chk.checked : false;
   try {
     const r = await fetch(
-      `${SB_URL}/rest/v1/events?id=eq.${EVENT_ID}`,
+      `${SB_URL}/rest/v1/events?on_conflict=id`,
       {
-        method:'PATCH', mode:'cors', credentials:'omit',
+        method:'POST', mode:'cors', credentials:'omit',
         headers:{
           'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}`,
-          'Content-Type':'application/json', 'Prefer':'return=minimal'
+          'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal'
         },
-        body: JSON.stringify({ video_enabled: enabled })
+        body: JSON.stringify({ id: EVENT_ID, video_enabled: enabled })
       }
     );
     if (!r.ok) throw new Error(await r.text());
@@ -1179,7 +1179,7 @@ async function confirmDelete() {
       headers:{ 'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json' }
     });
     if (!storageRes.ok) console.warn('Storage delete failed:', storageRes.status);
-    await fetch(`${SB_URL}/rest/v1/photos?id=eq.${id}`, {
+    await fetch(`${SB_URL}/rest/v1/photos?id=eq.${id}&event_id=eq.${EVENT_ID}`, {
       method:'DELETE', mode:'cors', credentials:'omit',
       headers:{ 'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal' }
     });
@@ -1205,15 +1205,15 @@ async function toggleUploads() {
     : '● Désactivé — galerie verrouillée';
   status.className = 'toggle-status ' + (enabled ? 'on' : 'off');
   try {
-    await fetch(`${SB_URL}/rest/v1/events?id=eq.${EVENT_ID}`, {
-      method: 'PATCH',
+    await fetch(`${SB_URL}/rest/v1/events?on_conflict=id`, {
+      method: 'POST',
       headers: {
         'apikey': SB_KEY,
         'Authorization': `Bearer ${SB_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({ uploads_enabled: enabled })
+      body: JSON.stringify({ id: EVENT_ID, uploads_enabled: enabled })
     });
   } catch(e) {
     console.warn('Toggle uploads sync failed:', e);
