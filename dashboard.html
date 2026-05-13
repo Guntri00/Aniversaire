@@ -701,40 +701,54 @@ async function loadDashboard() {
 
 // ══ REALTIME — synchro admin multi-onglets + propagation externe ══
 let sbClientAdmin = null;
+let _adminChannel = null;
+
 function startRealtimeAdmin() {
-  if (sbClientAdmin) return;
   if (!window.supabase || !window.supabase.createClient) return;
-  sbClientAdmin = window.supabase.createClient(SB_URL, SB_KEY);
-  sbClientAdmin
-    .channel('admin-photos')
-    // DELETE sans filtre — payload.old ne contient que l'id par défaut
+  if (!sbClientAdmin) sbClientAdmin = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // Détacher proprement l'ancien canal si présent
+  if (_adminChannel && _adminChannel.unsubscribe) {
+    try { _adminChannel.unsubscribe(); } catch(_) {}
+  }
+  _adminChannel = null;
+
+  _adminChannel = sbClientAdmin
+    .channel('admin-photos-' + EVENT_ID)
+    // DELETE : pas de filtre possible sur event_id (payload.old = clé primaire seule)
     .on('postgres_changes', {
       event: 'DELETE', schema: 'public', table: 'photos'
     }, (payload) => {
       const id = payload.old && payload.old.id;
       if (!id) return;
-      const existed = allPhotos.find(p => p.id === id);
-      if (!existed) return;
-      allPhotos = allPhotos.filter(p => p.id !== id);
+      const sid    = String(id);
+      const existed = allPhotos.find(p => String(p.id) === sid);
+      if (!existed) return; // photo d'un autre événement, ignorer
+      allPhotos = allPhotos.filter(p => String(p.id) !== sid);
       selectedPhotos.delete(id);
-      const card = document.getElementById('pc-' + id);
-      if (card) card.remove();
-      document.querySelectorAll(`[data-photo-id="${id}"]`).forEach(n => n.remove());
+      document.querySelectorAll(`#pc-${sid},[data-photo-id="${sid}"]`).forEach(n => n.remove());
       updateStats();
-      console.log('[Realtime admin] Photo supprimée:', id);
     })
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'photos',
       filter: `event_id=eq.${EVENT_ID}`
     }, (payload) => {
-      if (payload.new && !allPhotos.find(p => p.id === payload.new.id)) {
+      if (payload.new && !allPhotos.find(p => String(p.id) === String(payload.new.id))) {
         allPhotos.unshift(payload.new);
         renderPhotos();
         updateStats();
       }
     })
-    .subscribe((status) => {
+    .subscribe((status, err) => {
       console.log('[Realtime admin] Statut:', status);
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[Realtime admin] Reconnexion dans 4s…', err || '');
+        _adminChannel = null;
+        setTimeout(startRealtimeAdmin, 4000);
+      } else if (status === 'CLOSED') {
+        _adminChannel = null;
+        setTimeout(startRealtimeAdmin, 4000);
+      }
     });
 }
 
@@ -1174,22 +1188,32 @@ async function confirmDelete() {
   if (card) card.style.opacity = '0.4';
 
   try {
+    // 1. Supprimer du storage
     const storageRes = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`, {
       method:'DELETE', mode:'cors', credentials:'omit',
       headers:{ 'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json' }
     });
-    if (!storageRes.ok) console.warn('Storage delete failed:', storageRes.status);
-    await fetch(`${SB_URL}/rest/v1/photos?id=eq.${id}&event_id=eq.${EVENT_ID}`, {
+    if (!storageRes.ok) console.warn('[Dashboard] Storage delete warning:', storageRes.status, await storageRes.text().catch(()=>''));
+
+    // 2. Supprimer de la DB
+    const dbRes = await fetch(`${SB_URL}/rest/v1/photos?id=eq.${id}&event_id=eq.${EVENT_ID}`, {
       method:'DELETE', mode:'cors', credentials:'omit',
       headers:{ 'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal' }
     });
+    if (!dbRes.ok) {
+      const errText = await dbRes.text().catch(() => '');
+      throw new Error(`DB delete ${dbRes.status}: ${errText}`);
+    }
 
-    allPhotos = allPhotos.filter(p => p.id !== id);
+    // 3. Mettre à jour l'UI localement
+    allPhotos = allPhotos.filter(p => String(p.id) !== String(id));
+    selectedPhotos.delete(id);
     if (card) card.remove();
     updateStats();
     toast('✓ Photo supprimée');
   } catch(err) {
     if (card) card.style.opacity = '1';
+    console.error('[Dashboard] Erreur suppression:', err);
     toast('⚠️ Erreur suppression : ' + err.message);
   }
 }
