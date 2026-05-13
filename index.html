@@ -4,11 +4,14 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob: data: wss:; img-src 'self' https: blob: data:; media-src 'self' https: blob: data:; connect-src 'self' https: wss: blob:; script-src 'self' 'unsafe-inline' https:; worker-src 'self' blob:;">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>Joyeux Anniversaire — Partage Photos</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--cream:#FFF6EE;--warm:#FFFBF6;--gold:#E63D7A;--gold-l:#F27AA3;--gold-m:#FBD4E3;--dark:#23142A;--stone:#8A748A;--charcoal:#3A2240;--accent:#7B3CFF;--accent-l:#A57DFF;--party:#FFC93C}
+html{color-scheme:light}
+:root{color-scheme:light;--cream:#FFF6EE;--warm:#FFFBF6;--gold:#E63D7A;--gold-l:#F27AA3;--gold-m:#FBD4E3;--dark:#23142A;--stone:#8A748A;--charcoal:#3A2240;--accent:#7B3CFF;--accent-l:#A57DFF;--party:#FFC93C}
 body{background:var(--cream);font-family:'Jost',sans-serif;font-weight:300;color:var(--dark);min-height:100vh}
 .wrap{max-width:680px;margin:0 auto;padding:0 20px 80px}
 header{text-align:center;padding:48px 24px 32px}
@@ -41,6 +44,19 @@ h1 em{font-style:italic;color:var(--gold)}
 .cat-emoji{font-size:32px;margin-bottom:10px;display:block}
 .cat-name{font-family:'Fredoka',sans-serif;font-size:17px;margin-bottom:4px}
 .cat-desc{font-size:11px;color:var(--stone);line-height:1.5}
+.flip-hint{padding:0 0 10px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(138,128,120,.5);text-align:center}
+.flip-wrap{perspective:700px;height:160px;cursor:pointer}
+.flip-card{width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .58s cubic-bezier(.4,.2,.2,1);position:relative}
+.flip-card.flipped{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.flip-front{background:var(--warm);border:1.5px solid var(--gold-m);box-shadow:0 4px 16px rgba(184,147,90,.08);transition:border-color .3s,box-shadow .3s}
+.flip-front:hover{border-color:var(--gold);box-shadow:0 8px 28px rgba(184,147,90,.14)}
+.flip-front.flip-sel{background:linear-gradient(135deg,#FDF8F2,#FAF3E8);border-color:var(--gold);box-shadow:0 8px 28px rgba(184,147,90,.18)}
+.flip-back{background:linear-gradient(135deg,var(--gold),var(--gold-l));border:1.5px solid var(--gold);transform:rotateY(180deg);-webkit-transform:rotateY(180deg);padding:16px;text-align:center;box-shadow:0 8px 28px rgba(184,147,90,.25)}
+.flip-emoji{font-size:36px;margin-bottom:8px}
+.flip-name{font-family:'Fredoka',sans-serif;font-size:17px;font-weight:400;color:var(--dark)}
+.flip-desc{font-size:11px;color:rgba(28,23,18,.8);line-height:1.5;margin-bottom:11px}
+.flip-btn-3d{padding:8px 20px;border-radius:20px;background:var(--dark);color:var(--warm);font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;border:none;cursor:pointer;font-weight:500}
 .upload-section{display:none}.upload-section.visible{display:block}
 .back-btn{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone);background:none;border:none;cursor:pointer;margin-bottom:20px;transition:color .2s}
 .back-btn:hover{color:var(--gold)}
@@ -696,6 +712,32 @@ footer a{color:var(--gold);text-decoration:none}
   <meta name="msapplication-TileImage" content="/icons/icon-192.png">
   <meta name="msapplication-TileColor" content="#1C1712">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// Service Worker : register + auto-update quand nouvelle version déployée
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            nw.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
+      setInterval(() => { reg.update().catch(()=>{}); }, 15 * 60 * 1000);
+    } catch(_) {}
+  });
+}
+</script>
 </head>
 <body>
 <!-- 🎉🎂🎈🎁 -->
@@ -764,29 +806,63 @@ footer a{color:var(--gold);text-decoration:none}
     <div id="step-category">
       <p class="cat-title">Quel moment de la fête ?</p>
       <p class="cat-sub">Choisissez une catégorie pour mieux organiser vos souvenirs</p>
+      <p class="flip-hint">Retournez la carte pour choisir</p>
       <div class="cat-grid">
-        <div class="cat-card" onclick="selectCategory('arrivee','🎈','Arrivée',this)">
-          <span class="cat-emoji">🎈</span>
-          <div class="cat-name">Arrivée</div>
-          <div class="cat-desc">Les invités & les premiers sourires</div>
+        <div class="flip-wrap" onclick="flipCard('arrivee')">
+          <div class="flip-card" id="card-arrivee">
+            <div class="flip-face flip-front" id="front-arrivee">
+              <div class="flip-emoji">🎈</div>
+              <div class="flip-name">Arrivée</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div style="font-size:24px;margin-bottom:6px">🎈</div>
+              <div class="flip-desc">Les invités & les premiers sourires</div>
+              <button class="flip-btn-3d" onclick="event.stopPropagation();selectCategory('arrivee','🎈','Arrivée')">Choisir</button>
+            </div>
+          </div>
         </div>
-        <div class="cat-card" onclick="selectCategory('gateau','🎂','Gâteau & bougies',this)">
-          <span class="cat-emoji">🎂</span>
-          <div class="cat-name">Gâteau & bougies</div>
-          <div class="cat-desc">Le vœu, les bougies, la chanson</div>
+        <div class="flip-wrap" onclick="flipCard('gateau')">
+          <div class="flip-card" id="card-gateau">
+            <div class="flip-face flip-front" id="front-gateau">
+              <div class="flip-emoji">🎂</div>
+              <div class="flip-name">Gâteau & bougies</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div style="font-size:24px;margin-bottom:6px">🎂</div>
+              <div class="flip-desc">Le vœu, les bougies, la chanson</div>
+              <button class="flip-btn-3d" onclick="event.stopPropagation();selectCategory('gateau','🎂','Gâteau & bougies')">Choisir</button>
+            </div>
+          </div>
         </div>
-        <div class="cat-card" onclick="selectCategory('cadeaux','🎁','Cadeaux',this)">
-          <span class="cat-emoji">🎁</span>
-          <div class="cat-name">Cadeaux</div>
-          <div class="cat-desc">L'ouverture & les surprises</div>
+        <div class="flip-wrap" onclick="flipCard('cadeaux')">
+          <div class="flip-card" id="card-cadeaux">
+            <div class="flip-face flip-front" id="front-cadeaux">
+              <div class="flip-emoji">🎁</div>
+              <div class="flip-name">Cadeaux</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div style="font-size:24px;margin-bottom:6px">🎁</div>
+              <div class="flip-desc">L'ouverture & les surprises</div>
+              <button class="flip-btn-3d" onclick="event.stopPropagation();selectCategory('cadeaux','🎁','Cadeaux')">Choisir</button>
+            </div>
+          </div>
         </div>
-        <div class="cat-card" onclick="selectCategory('fete','🎉','Fête & danse',this)">
-          <span class="cat-emoji">🎉</span>
-          <div class="cat-name">Fête & danse</div>
-          <div class="cat-desc">La fête jusqu'au bout de la nuit</div>
+        <div class="flip-wrap" onclick="flipCard('fete')">
+          <div class="flip-card" id="card-fete">
+            <div class="flip-face flip-front" id="front-fete">
+              <div class="flip-emoji">🎉</div>
+              <div class="flip-name">Fête & danse</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div style="font-size:24px;margin-bottom:6px">🎉</div>
+              <div class="flip-desc">La fête jusqu'au bout de la nuit</div>
+              <button class="flip-btn-3d" onclick="event.stopPropagation();selectCategory('fete','🎉','Fête & danse')">Choisir</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </div><!-- /step-category -->
+
     <div id="step-upload" class="upload-section">
       <button class="back-btn" onclick="goBack()">← Changer de catégorie</button>
       <div class="selected-cat-badge">
@@ -840,6 +916,12 @@ footer a{color:var(--gold);text-decoration:none}
 
       <!-- Onglet vidéo (20s) -->
       <div id="upload-video-pane" style="display:none">
+        <div id="videoPermission" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;min-height:260px;background:#23142A;border-radius:12px">
+          <div style="font-size:52px;margin-bottom:16px">🎬</div>
+          <p style="font-size:16px;font-weight:500;color:var(--gold);margin-bottom:8px">Accès à la caméra et au micro</p>
+          <p style="font-size:13px;color:var(--stone);margin-bottom:24px;line-height:1.5">Pour enregistrer des vidéos, autorisez l'accès à votre caméra et micro</p>
+          <button onclick="requestVideoPermission()" style="background:var(--gold);color:#fff;border:none;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:600;font-family:Jost,sans-serif;cursor:pointer;letter-spacing:.05em">Activer</button>
+        </div>
         <div id="videoRecorderWrap">
           <div id="videoWrap">
             <video id="videoLive" autoplay muted playsinline></video>
@@ -980,10 +1062,10 @@ footer a{color:var(--gold);text-decoration:none}
   <div id="panel-qr" class="panel">
     <div class="qr-wrap">
       <div class="qr-box">
-        <img src="https://chart.googleapis.com/chart?cht=qr&chs=220x220&chl=https%3A%2F%2Fmemorie-one.vercel.app&choe=UTF-8&chld=Q%7C4"
-          alt="QR Code" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fmemorie-one.vercel.app&margin=20&ecc=Q'"/>
+        <img src="https://chart.googleapis.com/chart?cht=qr&chs=220x220&chl=https%3A%2F%2Faniversaire.vercel.app%2F&choe=UTF-8&chld=Q%7C4"
+          alt="QR Code" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Faniversaire.vercel.app%2F&margin=20&ecc=Q'"/>
         <p class="qr-lbl">Scanner pour partager vos photos</p>
-        <p class="qr-url">https://memorie-one.vercel.app</p>
+        <p class="qr-url">https://aniversaire.vercel.app/</p>
         <button class="qr-dl" onclick="downloadQR()">⬇ Télécharger le QR code</button>
       </div>
       <div class="qr-steps">
@@ -1016,15 +1098,19 @@ footer a{color:var(--gold);text-decoration:none}
       <button class="ss-btn" onclick="ssPrev()">‹</button>
       <button class="ss-btn" id="ssPlayBtn" onclick="ssTogglePlay()">⏸</button>
       <button class="ss-btn" onclick="ssNext()">›</button>
-      <button class="ss-btn" onclick="ssClose()">✕</button>
+      <button class="ss-btn" aria-label="Fermer le diaporama" onclick="ssClose()">✕</button>
     </div>
   </div>
 </div>
 
 <div class="dl-toast" id="dlToast"></div>
+<!-- BANNIÈRE OFFLINE -->
+<div id="offlineBanner" role="status" aria-live="polite" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:#3A2240;color:#FFFBF6;font-family:'Jost',sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-align:center;padding:10px 16px;box-shadow:0 2px 10px rgba(0,0,0,.25)">
+  ⚠︎ Connexion perdue — vos actions reprendront dès le retour du réseau
+</div>
 <!-- LIGHTBOX -->
 <div class="lb" id="lb" onclick="if(event.target===this)closeLB()">
-  <button class="lb-x" onclick="closeLB()">✕</button>
+  <button class="lb-x" aria-label="Fermer l'image" onclick="closeLB()">✕</button>
   <img id="lbImg" src="" alt="" loading="lazy" style="display:block">
   <video id="lbVideo" src="" controls playsinline style="display:none;max-width:100%;max-height:90vh;border-radius:8px"></video>
 </div>
@@ -1095,11 +1181,19 @@ function stopVideoCamera() {
   clearTimeout(videoTimer);
 }
 async function initVideoCamera() {
-  const vid    = document.getElementById('videoLive');
-  const permEl = document.getElementById('cameraPermission');
+  const vid     = document.getElementById('videoLive');
+  const permEl  = document.getElementById('videoPermission');
+  const recWrap = document.getElementById('videoRecorderWrap');
   if (!vid) return;
 
-  // Si stream photo déjà actif → réutiliser (pas de redemande de permission)
+  if (videoStream && videoStream.active) {
+    if (permEl)  permEl.style.display = 'none';
+    if (recWrap) recWrap.style.display = 'block';
+    vid.srcObject = videoStream;
+    await vid.play().catch(() => {});
+    return;
+  }
+
   if (cameraStream && cameraStream.active) {
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -1110,14 +1204,34 @@ async function initVideoCamera() {
     } catch(e) {
       videoStream = new MediaStream(cameraStream.getVideoTracks());
     }
+    if (permEl)  permEl.style.display = 'none';
+    if (recWrap) recWrap.style.display = 'block';
     vid.srcObject = videoStream;
     await vid.play().catch(() => {});
     return;
   }
 
-  // Pas de stream → demander les permissions via getUserMedia directement
-  // (l'utilisateur vient de cliquer sur l'onglet vidéo = action directe)
-  stopVideoCamera();
+  const granted = await _wasCameraEverGranted();
+  if (granted) {
+    if (permEl)  permEl.style.display = 'none';
+    if (recWrap) recWrap.style.display = 'block';
+    _videoWasActive = true;
+    const ok = await _reacquireCameraOnce();
+    if (!ok) _reacquireCameraWithRetry();
+    return;
+  }
+
+  if (recWrap) recWrap.style.display = 'none';
+  if (permEl)  permEl.style.display = 'flex';
+}
+
+async function requestVideoPermission() {
+  const vid     = document.getElementById('videoLive');
+  const permEl  = document.getElementById('videoPermission');
+  const recWrap = document.getElementById('videoRecorderWrap');
+  const btn = permEl ? permEl.querySelector('button') : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Activation…'; }
+
   const tries = [
     { video: { facingMode: 'environment', width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} }, audio: true },
     { video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720},  frameRate:{ideal:30} }, audio: true },
@@ -1129,11 +1243,23 @@ async function initVideoCamera() {
     try {
       videoStream  = await navigator.mediaDevices.getUserMedia(c);
       cameraStream = new MediaStream(videoStream.getVideoTracks());
+      try { localStorage.setItem('anniv_cam_granted','1'); } catch(_){}
+      videoStream.getTracks().forEach(t => {
+        t.addEventListener('ended', () => {
+          if (document.hidden) return;
+          _videoWasActive = true;
+          _reacquireCameraWithRetry();
+        });
+      });
+      if (permEl)  permEl.style.display = 'none';
+      if (recWrap) recWrap.style.display = 'block';
       vid.srcObject = videoStream;
       await vid.play().catch(() => {});
+      if (btn) { btn.disabled = false; btn.textContent = 'Activer'; }
       return;
-    } catch(err) {}
+    } catch(err) { videoStream = null; }
   }
+  if (btn) { btn.disabled = false; btn.textContent = 'Activer'; }
   showToast('Caméra non disponible — vérifiez les permissions dans votre navigateur');
 }
 
@@ -1204,15 +1330,17 @@ function toggleVideoRecord() {
 function showVideoPreview(blob) {
   const previewEl = document.getElementById('videoPreviewEl');
 
+  // Libérer l'URL précédente si on avait déjà une preview
+  if (previewEl._objectUrl) { try { URL.revokeObjectURL(previewEl._objectUrl); } catch(_){} previewEl._objectUrl = null; }
+
   // Technique seekable : charger tout le blob en mémoire
-  // pour que le player puisse scrubber sans saccades
   const reader = new FileReader();
   reader.onload = function(e) {
-    // Utiliser ArrayBuffer converti en blob avec le bon type
-    // pour forcer le navigateur à indexer la durée
     const arrayBuf = e.target.result;
     const seekableBlob = new Blob([arrayBuf], { type: blob.type });
-    previewEl.src   = URL.createObjectURL(seekableBlob);
+    const url = URL.createObjectURL(seekableBlob);
+    previewEl._objectUrl = url;
+    previewEl.src   = url;
     previewEl.muted = false;
     previewEl.load();
   };
@@ -1224,9 +1352,11 @@ function showVideoPreview(blob) {
 
 function retakeVideo() {
   videoBlob=null;
+  const previewEl = document.getElementById('videoPreviewEl');
+  if (previewEl && previewEl._objectUrl) { try { URL.revokeObjectURL(previewEl._objectUrl); } catch(_){} previewEl._objectUrl = null; }
   document.getElementById('videoPreviewWrap').style.display='none';
   document.getElementById('videoRecorderWrap').style.display='block';
-  document.getElementById('videoPreviewEl').src='';
+  if (previewEl) previewEl.src='';
 }
 
 async function useVideo() {
@@ -1242,6 +1372,41 @@ async function useVideo() {
 // ══════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════
+// Wrapper console — silencieux en prod (?debug=1 pour activer)
+const DEV = /[?&]debug=1/.test(location.search) || /localhost|127\.0\.0\.1/.test(location.hostname);
+const log = {
+  log:   DEV ? console.log.bind(console)   : () => {},
+  warn:  DEV ? console.warn.bind(console)  : () => {},
+  error: console.error.bind(console),
+  info:  DEV ? console.info.bind(console)  : () => {}
+};
+
+// Bannière offline : écoute online/offline
+(function() {
+  const banner = document.getElementById('offlineBanner');
+  if (!banner) return;
+  const update = () => { banner.style.display = navigator.onLine ? 'none' : 'block'; };
+  window.addEventListener('online',  update);
+  window.addEventListener('offline', update);
+  update();
+})();
+
+// ══ MONITORING ERREURS ══
+(function() {
+  const capture = (payload) => {
+    log.error('[App error]', payload);
+    if (window.Sentry && window.Sentry.captureException) {
+      try { window.Sentry.captureException(payload.error || payload); } catch(_) {}
+    }
+  };
+  window.addEventListener('error', (e) => {
+    capture({ type: 'error', message: e.message, filename: e.filename, line: e.lineno, col: e.colno, error: e.error });
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    capture({ type: 'unhandledrejection', reason: e.reason });
+  });
+})();
+
 const SB_URL   = 'https://hmytqbgnjpugqeslnuvk.supabase.co';
 const SB_KEY   = 'sb_publishable_59uI3S3lCP0xyVtvrR6ZZA_vXsiF27o';
 
@@ -1272,7 +1437,7 @@ const CATEGORIES = [
 ];
 
 // ── Échapper HTML (anti-XSS) ──
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; }
 
 // ══════════════════════════════════════════
 //  STATE
@@ -1327,7 +1492,6 @@ async function startCamera() {
   errEl.style.display     = 'none';
   previewEl.style.display = 'none';
 
-  // Si stream déjà actif → afficher directement sans redemander
   if (cameraStream && cameraStream.active) {
     if (permEl) permEl.style.display = 'none';
     wrapEl.style.display = 'block';
@@ -1336,7 +1500,16 @@ async function startCamera() {
     return;
   }
 
-  // Pas de stream → afficher l'écran de demande de permission
+  const granted = await _wasCameraEverGranted();
+  if (granted) {
+    wrapEl.style.display = 'block';
+    if (permEl) permEl.style.display = 'none';
+    _cameraWasActive = true;
+    const ok = await _reacquireCameraOnce();
+    if (!ok) _reacquireCameraWithRetry();
+    return;
+  }
+
   wrapEl.style.display = 'none';
   if (permEl) permEl.style.display = 'flex';
 }
@@ -1362,7 +1535,8 @@ async function requestCameraPermission() {
       cameraStream = await navigator.mediaDevices.getUserMedia(constraint);
       video.srcObject = cameraStream;
       await video.play().catch(() => {});
-      // Succès → cacher la demande, montrer la caméra
+      // Succès → mémoriser définitivement + cacher la demande
+      try { localStorage.setItem('anniv_cam_granted','1'); } catch(_){}
       if (permEl) permEl.style.display = 'none';
       wrapEl.style.display = 'block';
       errEl.style.display  = 'none';
@@ -1426,7 +1600,7 @@ async function toggleFlash() {
       btn.textContent = flashEnabled ? '🔦' : '⚡';
       showDlToast(flashEnabled ? '🔦 Flash activé' : 'Flash désactivé');
     } catch(e) {
-      console.warn('Torch error:', e);
+      log.warn('Torch error:', e);
       flashEnabled = false;
       showDlToast('Flash non disponible sur cet appareil');
     }
@@ -1520,8 +1694,12 @@ function captureFrame(video, isSelfie) {
 
   canvas.toBlob(blob => {
     capturedBlob = blob;
+    const img = document.getElementById('camPreviewImg');
+    // Révoquer l'URL précédente pour éviter le memory-leak
+    if (img._objectUrl) { try { URL.revokeObjectURL(img._objectUrl); } catch(_){} }
     const url = URL.createObjectURL(blob);
-    document.getElementById('camPreviewImg').src = url;
+    img._objectUrl = url;
+    img.src = url;
     document.getElementById('cameraWrap').style.display    = 'none';
     document.getElementById('cameraPreview').style.display = 'block';
   }, 'image/jpeg', 0.92);
@@ -1529,6 +1707,8 @@ function captureFrame(video, isSelfie) {
 
 function retakePhoto() {
   capturedBlob = null;
+  const img = document.getElementById('camPreviewImg');
+  if (img && img._objectUrl) { try { URL.revokeObjectURL(img._objectUrl); } catch(_){} img._objectUrl = null; img.src = ''; }
   document.getElementById('cameraPreview').style.display = 'none';
   document.getElementById('cameraWrap').style.display    = 'block';
 }
@@ -1573,10 +1753,17 @@ function switchTab(id, btn) {
 // ══════════════════════════════════════════
 //  CATÉGORIE
 // ══════════════════════════════════════════
-function selectCategory(id, emoji, name, el) {
+function flipCard(catId) {
+  var card = document.getElementById('card-' + catId);
+  if (!card) return;
+  card.classList.toggle('flipped');
+}
+
+function selectCategory(id, emoji, name) {
   selectedCategory = { id, emoji, name };
-  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
-  if (el) el.classList.add('selected');
+  document.querySelectorAll('.flip-front').forEach(c => c.classList.remove('flip-sel'));
+  const sf = document.getElementById('front-' + id);
+  if (sf) sf.classList.add('flip-sel');
   document.getElementById('badge-emoji').textContent = emoji;
   document.getElementById('badge-name').textContent  = name;
   setTimeout(() => {
@@ -1595,7 +1782,8 @@ function goBack() {
   renderPreviews();
   document.getElementById('step-upload').classList.remove('visible');
   document.getElementById('step-category').style.display = 'block';
-  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.flip-card').forEach(c => c.classList.remove('flipped'));
+  document.querySelectorAll('.flip-front').forEach(c => c.classList.remove('flip-sel'));
   document.getElementById('toast').style.display = 'none';
 }
 
@@ -1626,7 +1814,7 @@ function renderPreviews() {
     const media = f._isVideo
       ? `<video src="${burl}" controls playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:8px"></video>`
       : `<img src="${burl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
-    return `<div class="prev">${media}<button class="rm" onclick="removeFile(${i})">✕</button></div>`;
+    return `<div class="prev">${media}<button class="rm" aria-label="Retirer ce fichier" onclick="removeFile(${i})">✕</button></div>`;
   }).join('');
   document.getElementById('sbtn').style.display = selectedFiles.length ? 'block' : 'none';
 }
@@ -1640,7 +1828,9 @@ function renderPreviews() {
 async function compressImage(file) {
   if (file._isVideo || (file.type && file.type.startsWith('video/'))) return file;
 
-  const TARGET_MAX_BYTES = 280 * 1024; // cible 280 Ko max
+  // Cible plus basse sur mobile (4G/3G) pour un chargement rapide de la galerie
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const TARGET_MAX_BYTES = (isMobile ? 160 : 280) * 1024;
   const MAX_W            = 1200;
   const MAX_H            = 1600;
   const QUALITY_START    = 0.82;
@@ -1756,7 +1946,7 @@ async function refreshAllPhotos() {
         loadGallery();
       }
     }
-  } catch(e) { console.warn('Refresh failed:', e); }
+  } catch(e) { log.warn('Refresh failed:', e); }
 }
 
 function setProgress(done, total, label) {
@@ -1814,7 +2004,7 @@ async function loadGallery() {
         return;
       }
 
-      const loop = photos.length===1?[...photos,...photos,...photos]:photos.length===2?[...photos,...photos]:photos;
+      const loop = photos;
       document.getElementById('track-'+cat.id).innerHTML = loop.map(p => {
         const thumb = p.media_type === 'video'
           ? `<video src="${imgUrl(p)}" muted playsinline preload="metadata"
@@ -1823,7 +2013,7 @@ async function loadGallery() {
                onerror="cleanupBrokenMedia('${p.id}','${cat.id}',this.closest('.cw-thumb'))"
                style="width:100%;height:100%;object-fit:cover;display:block"></video>
              <div class="vplay-ico"><span>▶</span></div>`
-          : `<img src="${imgUrl(p,'thumb')}" alt="" decoding="async" loading="lazy"
+          : `<img src="${imgUrl(p,'thumb')}" alt="" width="143" height="143" decoding="async" loading="lazy" fetchpriority="low"
                onload="this.parentElement.classList.add('loaded')"
                onerror="cleanupBrokenMedia('${p.id}','${cat.id}',this.closest('.cw-thumb'))">`;
         return `<div class="cw-thumb loaded" id="th-${p.id}" data-photo-id="${p.id}">${thumb}</div>`;
@@ -1953,25 +2143,29 @@ async function toggleLike(photoId, btn) {
   const liked    = getLike(photoId);
   const countEl  = document.getElementById('likes-' + photoId);
   const current  = parseInt(countEl ? countEl.textContent : '0') || 0;
-  const newVal   = liked ? Math.max(0, current - 1) : current + 1;
+  const optimistic = liked ? Math.max(0, current - 1) : current + 1;
 
   setLike(photoId, !liked);
   if (btn) btn.classList.toggle('liked', !liked);
-  if (countEl) countEl.textContent = newVal;
+  if (countEl) countEl.textContent = optimistic;
   if (!liked) floatEmoji('❤️', btn);
 
   try {
-    await fetch(`${SB_URL}/rest/v1/photos?id=eq.${photoId}`, {
-      method: 'PATCH',
+    const res = await fetch(`${SB_URL}/rest/v1/rpc/toggle_photo_like`, {
+      method: 'POST',
       mode: 'cors',
       credentials: 'omit',
       headers: {
         'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
-        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+        'Content-Type': 'application/json', 'Accept': 'application/json'
       },
-      body: JSON.stringify({ likes: newVal })
+      body: JSON.stringify({ p_id: photoId, p_event: EVENT_ID, p_delta: liked ? -1 : 1 })
     });
-  } catch(e) { console.warn('Like update failed:', e); }
+    if (res.ok) {
+      const realCount = await res.json();
+      if (countEl && typeof realCount === 'number') countEl.textContent = realCount;
+    }
+  } catch(e) { log.warn('Like update failed:', e); }
 }
 
 function addReaction(photoId, emoji, btn) {
@@ -2022,7 +2216,7 @@ function buildPhotoItem(p) {
            <span style="font-size:40px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.8))">▶</span>
          </div>
        </div>`
-    : `<img src="${esc(url)}" alt="Photo de ${safeName}" loading="lazy"
+    : `<img src="${esc(url)}" alt="Photo de ${safeName}" width="600" height="600" loading="lazy" decoding="async"
             onload="this.closest('.gitem').classList.add('loaded')"
             onerror="cleanupBrokenMedia('${safeId}','${safeCat}',this.closest('.gitem'))">`;
 
@@ -2030,16 +2224,16 @@ function buildPhotoItem(p) {
     <div class="gitem" id="photo-${safeId}" data-photo-id="${safeId}" onclick="${clickFn}">
       ${mediaEl}
       <div class="gmeta">par ${safeName}</div>
-      <button class="dl-btn" onclick="event.stopPropagation();downloadPhoto('${safeUrl}','anniv-${safeId.substring(0,6)}.${dlExt}')" title="Télécharger">⬇️</button>
+      <button class="dl-btn" aria-label="Télécharger la photo" onclick="event.stopPropagation();downloadPhoto('${safeUrl}','anniv-${safeId.substring(0,6)}.${dlExt}')" title="Télécharger">⬇️</button>
       <div class="reactions">
-        <button class="react-btn ${isLiked?'liked':''}" id="like-btn-${safeId}" onclick="event.stopPropagation();toggleLike('${safeId}',this)">
+        <button class="react-btn ${isLiked?'liked':''}" id="like-btn-${safeId}" aria-label="J'aime cette photo" aria-pressed="${isLiked?'true':'false'}" onclick="event.stopPropagation();toggleLike('${safeId}',this)">
           ❤️ <span class="react-count" id="likes-${safeId}">${likeCount}</span>
         </button>
-        <button class="react-btn" onclick="event.stopPropagation();addReaction('${safeId}','🔥',this)">🔥</button>
-        <button class="react-btn" onclick="event.stopPropagation();addReaction('${safeId}','😍',this)">😍</button>
+        <button class="react-btn" aria-label="Réaction feu" onclick="event.stopPropagation();addReaction('${safeId}','🔥',this)">🔥</button>
+        <button class="react-btn" aria-label="Réaction coup de cœur" onclick="event.stopPropagation();addReaction('${safeId}','😍',this)">😍</button>
       </div>
       ${canDelete ? `
-        <button class="del-btn" onclick="event.stopPropagation();askDelete('${safeId}','${safePath}',this.closest('.gitem'))">🗑</button>
+        <button class="del-btn" aria-label="Supprimer la photo" onclick="event.stopPropagation();askDelete('${safeId}','${safePath}',this.closest('.gitem'))">🗑</button>
         <div class="del-timer" id="timer-${safeId}"><span id="timer-txt-${safeId}"></span></div>
         <div class="del-progress"><div class="del-progress-fill" id="timer-bar-${safeId}" style="width:${Math.round((remaining/DELETE_WINDOW_MS)*100)}%"></div></div>
       ` : ''}
@@ -2136,7 +2330,7 @@ async function cleanupBrokenMedia(id, category, tileEl) {
   }
 
   try {
-    await fetch(`${SB_URL}/rest/v1/photos?id=eq.${encodeURIComponent(id)}`, {
+    await fetch(`${SB_URL}/rest/v1/photos?id=eq.${encodeURIComponent(id)}&event_id=eq.${EVENT_ID}`, {
       method: 'DELETE',
       mode: 'cors',
       credentials: 'omit',
@@ -2166,6 +2360,12 @@ function closeModal() {
 
 async function confirmDelete() {
   if (!pendingDeleteId) return;
+  // Double-click guard
+  const confirmBtn = document.querySelector('.modal-confirm');
+  if (confirmBtn) {
+    if (confirmBtn.disabled) return;
+    confirmBtn.disabled = true;
+  }
 
   const { id, path } = pendingDeleteId;
   const el = pendingDeleteEl;
@@ -2175,8 +2375,17 @@ async function confirmDelete() {
   pendingDeleteId = null;
   pendingDeleteEl = null;
 
-  // Animation de suppression
-  if (el) el.classList.add('deleting');
+  // Garde-fou : refuser tout path qui n'appartient pas à cet event
+  if (!path || !path.startsWith(EVENT_ID + '/')) {
+    log.warn('Delete refusé : path hors event', path);
+    if (el) el.classList.remove('deleting');
+    if (confirmBtn) confirmBtn.disabled = false;
+    return;
+  }
+
+  // Animation de suppression — chercher l'élément live en cas de re-render du grid
+  const liveEl = document.getElementById('photo-' + id) || el;
+  if (liveEl) liveEl.classList.add('deleting');
 
   try {
     // 1. Supprimer du Storage
@@ -2190,10 +2399,10 @@ async function confirmDelete() {
         'Content-Type':  'application/json'
       }
     });
-    if (!storageRes.ok) console.warn('Storage delete warning:', await storageRes.text());
+    if (!storageRes.ok) log.warn('Storage delete warning:', await storageRes.text());
 
-    // 2. Supprimer de la DB
-    const dbRes = await fetch(`${SB_URL}/rest/v1/photos?id=eq.${id}`, {
+    // 2. Supprimer de la DB — filtre event_id pour éviter cross-event delete
+    const dbRes = await fetch(`${SB_URL}/rest/v1/photos?id=eq.${id}&event_id=eq.${EVENT_ID}`, {
       method: 'DELETE',
       mode: 'cors',
       credentials: 'omit',
@@ -2204,10 +2413,12 @@ async function confirmDelete() {
         'Prefer':        'return=minimal'
       }
     });
-    if (!dbRes.ok) console.warn('DB delete warning:', await dbRes.text());
+    if (!dbRes.ok) log.warn('DB delete warning:', await dbRes.text());
 
-    // 3. Retirer du DOM après animation
-    setTimeout(() => { if (el) el.remove(); }, 400);
+    // 3. Retirer du DOM après animation (sélecteur par ID pour survivre aux re-renders)
+    setTimeout(() => {
+      document.querySelectorAll(`#photo-${id},[data-photo-id="${id}"]`).forEach(n => n.remove());
+    }, 400);
 
     // 4. Mettre à jour allPhotos
     const deletedPhoto = allPhotos.find(p => p.id === id);
@@ -2231,8 +2442,10 @@ async function confirmDelete() {
 
   } catch (err) {
     if (el) el.classList.remove('deleting');
-    console.error('Delete error:', err);
+    log.error('Delete error:', err);
     alert('Erreur lors de la suppression : ' + err.message);
+  } finally {
+    if (confirmBtn) confirmBtn.disabled = false;
   }
 }
 
@@ -2352,8 +2565,7 @@ function showWidgets() {
   CATEGORIES.forEach(cat => {
     const photos = allPhotos.filter(p=>p.category===cat.id);
     if (photos.length>0) {
-      const loop = photos.length===1?[...photos,...photos,...photos]:photos.length===2?[...photos,...photos]:photos;
-      startSlider(cat.id, loop.length);
+      startSlider(cat.id, photos.length);
     }
   });
 }
@@ -2362,7 +2574,7 @@ function showWidgets() {
 //  QR + LIGHTBOX
 // ══════════════════════════════════════════
 function downloadQR() {
-  window.open('https://chart.googleapis.com/chart?cht=qr&chs=600x600&chl=https%3A%2F%2Fmemorie-one.vercel.app&choe=UTF-8&chld=Q%7C4','_blank');
+  window.open('https://chart.googleapis.com/chart?cht=qr&chs=600x600&chl=https%3A%2F%2Faniversaire.vercel.app%2F&choe=UTF-8&chld=Q%7C4','_blank');
 }
 function openLB(src) {
   const lbImg   = document.getElementById('lbImg');
@@ -2605,7 +2817,7 @@ async function downloadAllPhotos() {
       done++;
       await new Promise(r => setTimeout(r, 500));
     } catch(e) {
-      console.warn('Download failed:', imgUrl(p), e);
+      log.warn('Download failed:', imgUrl(p), e);
     }
   }
 
@@ -2678,7 +2890,7 @@ function buildWallTile(p, isNew){
     ? `<video src="${esc(url)}" playsinline muted loop preload="metadata"
             onerror="cleanupBrokenMedia('${safeId}','${p.category}',this.closest('.wall-tile'))"></video>
        <div class="wt-play">▶</div>`
-    : `<img src="${esc(url)}" alt="" loading="lazy" decoding="async"
+    : `<img src="${esc(url)}" alt="" width="400" height="400" loading="lazy" decoding="async"
             onerror="cleanupBrokenMedia('${safeId}','${p.category}',this.closest('.wall-tile'))">`;
   const tile = document.createElement('div');
   tile.className = 'wall-tile' + (isNew ? ' new' : '');
@@ -2827,13 +3039,204 @@ function stopLiveWall(){
 
 function wallKeyHandler(e){ if (e.key === 'Escape') stopLiveWall(); }
 
-// Pause toutes les vidéos du mur quand l'onglet n'est plus visible
+// ══════════════════════════════════════════════════════════════════════════
+// CAMÉRA — Recovery robuste multi-navigateur (iOS Safari / Chrome Android)
+// ══════════════════════════════════════════════════════════════════════════
+let _cameraWasActive   = false;
+let _videoWasActive    = false;
+let _reacquireBusy     = false;
+let _reacquireRetryId  = null;
+
+async function _attachStreamToVideo(videoEl, stream) {
+  if (!videoEl) return;
+  try { videoEl.pause(); } catch(_){}
+  try { videoEl.srcObject = null; } catch(_){}
+  try { videoEl.removeAttribute('src'); } catch(_){}
+  try { videoEl.load(); } catch(_){}
+  try {
+    videoEl.muted = true; videoEl.playsInline = true;
+    videoEl.setAttribute('playsinline',''); videoEl.setAttribute('autoplay',''); videoEl.setAttribute('muted','');
+    videoEl.srcObject = stream;
+  } catch(_){}
+  const delays = [0, 100, 300, 800, 1800];
+  for (const d of delays) {
+    await new Promise(r => setTimeout(r, d));
+    if (!videoEl.paused && videoEl.readyState >= 2) return;
+    try { await videoEl.play(); } catch(_){}
+  }
+  if (videoEl.paused) {
+    const handler = () => { videoEl.play().catch(()=>{}); };
+    document.addEventListener('touchstart', handler, { once:true, capture:true });
+    document.addEventListener('click',      handler, { once:true, capture:true });
+  }
+}
+
+async function _reacquireMediaStream(wantAudio) {
+  const tries = wantAudio
+    ? [ { video: { facingMode: facingMode, width:{ideal:1280}, height:{ideal:720} }, audio: true },
+        { video: { facingMode: facingMode }, audio: true },
+        { video: true, audio: true },
+        { video: true, audio: false } ]
+    : [ { video: { facingMode: facingMode, width:{ideal:1280}, height:{ideal:720} }, audio: false },
+        { video: { facingMode: facingMode }, audio: false },
+        { video: true, audio: false } ];
+  for (const c of tries) {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia(c);
+      try { localStorage.setItem('anniv_cam_granted','1'); } catch(_){}
+      s.getTracks().forEach(t => {
+        t.addEventListener('ended', () => {
+          if (document.hidden) return;
+          _cameraWasActive = true;
+          _reacquireCameraWithRetry();
+        });
+      });
+      return s;
+    } catch(e) {}
+  }
+  return null;
+}
+
+let _cameraWatchdogId = null;
+function _startCameraWatchdog() {
+  if (_cameraWatchdogId) return;
+  _cameraWatchdogId = setInterval(async () => {
+    if (document.hidden || _reacquireBusy) return;
+    const photoPane = document.getElementById('upload-camera-pane');
+    const wrapEl    = document.getElementById('cameraWrap');
+    const photoVid  = document.getElementById('cameraVideo');
+    if (photoPane && photoPane.style.display === 'block' &&
+        wrapEl && wrapEl.style.display === 'block' && photoVid) {
+      const streamDead = !cameraStream || !cameraStream.active ||
+                         cameraStream.getVideoTracks().every(t => t.readyState === 'ended');
+      const videoDead  = photoVid.paused || photoVid.readyState === 0 || photoVid.videoWidth === 0;
+      if (streamDead || videoDead) {
+        if (await _wasCameraEverGranted()) { _cameraWasActive = true; _reacquireCameraOnce(); }
+      }
+    }
+    const vidPane = document.getElementById('upload-video-pane');
+    const recWrap = document.getElementById('videoRecorderWrap');
+    const liveVid = document.getElementById('videoLive');
+    if (vidPane && vidPane.style.display === 'block' &&
+        recWrap && recWrap.style.display === 'block' &&
+        liveVid && typeof isRecording !== 'undefined' && !isRecording) {
+      const streamDead = !videoStream || !videoStream.active ||
+                         videoStream.getVideoTracks().every(t => t.readyState === 'ended');
+      const videoDead  = liveVid.paused || liveVid.readyState === 0 || liveVid.videoWidth === 0;
+      if (streamDead || videoDead) {
+        if (await _wasCameraEverGranted()) { _videoWasActive = true; _reacquireCameraOnce(); }
+      }
+    }
+  }, 2000);
+}
+_startCameraWatchdog();
+
+function _showReacquireOverlay(show) {
+  ['cameraVideo','videoLive'].forEach(id => {
+    const vid = document.getElementById(id);
+    if (!vid || !vid.parentNode) return;
+    let ov = vid.parentNode.querySelector('.cam-loader');
+    if (show) {
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.className = 'cam-loader';
+        ov.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;font-family:Jost,sans-serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;z-index:5;pointer-events:none;gap:10px';
+        ov.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:camSpin .8s linear infinite"></span>Reprise…';
+        const style = document.getElementById('cam-loader-style') || Object.assign(document.createElement('style'),{id:'cam-loader-style',textContent:'@keyframes camSpin{to{transform:rotate(360deg)}}'});
+        if (!style.parentNode) document.head.appendChild(style);
+        vid.parentNode.appendChild(ov);
+      }
+      ov.style.display = 'flex';
+    } else if (ov) { ov.style.display = 'none'; }
+  });
+}
+
+async function _wasCameraEverGranted() {
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const st = await navigator.permissions.query({ name: 'camera' });
+      if (st.state === 'granted') return true;
+      if (st.state === 'denied')  return false;
+    }
+  } catch(_) {}
+  try { return localStorage.getItem('anniv_cam_granted') === '1'; } catch(_) { return false; }
+}
+
+function _releaseAllCameraHardware() {
+  const photoPane = document.getElementById('upload-camera-pane');
+  const vidPane   = document.getElementById('upload-video-pane');
+  const recWrap   = document.getElementById('videoRecorderWrap');
+  _cameraWasActive = !!(photoPane && photoPane.style.display !== 'none' && cameraStream);
+  _videoWasActive  = !!(vidPane && vidPane.style.display !== 'none' &&
+                        recWrap && recWrap.style.display !== 'none' &&
+                        videoStream);
+  if (isRecording && typeof stopVideoRecord === 'function') {
+    try { stopVideoRecord(); } catch(_){}
+  }
+  try { if (cameraStream) cameraStream.getTracks().forEach(t => { try { t.stop(); } catch(_){} }); } catch(_){}
+  try { if (videoStream)  videoStream.getTracks().forEach(t => { try { t.stop();  } catch(_){} }); } catch(_){}
+  cameraStream = null;
+  videoStream  = null;
+  const pv = document.getElementById('cameraVideo'); if (pv) { try { pv.pause(); pv.srcObject = null; pv.load(); } catch(_){} }
+  const lv = document.getElementById('videoLive');   if (lv) { try { lv.pause(); lv.srcObject = null; lv.load(); } catch(_){} }
+}
+
+function _stopReacquireRetry() {
+  if (_reacquireRetryId) { clearInterval(_reacquireRetryId); _reacquireRetryId = null; }
+}
+
+async function _reacquireCameraOnce() {
+  if (_reacquireBusy) return false;
+  if (!_cameraWasActive && !_videoWasActive) return true;
+  if (document.hidden) return false;
+  _reacquireBusy = true;
+  _showReacquireOverlay(true);
+  try {
+    const fresh = await _reacquireMediaStream(_videoWasActive);
+    if (!fresh) return false;
+    const photoVid = document.getElementById('cameraVideo');
+    const liveVid  = document.getElementById('videoLive');
+    if (_videoWasActive) {
+      videoStream  = fresh;
+      cameraStream = new MediaStream(fresh.getVideoTracks());
+      if (liveVid)  await _attachStreamToVideo(liveVid,  fresh);
+      if (photoVid) await _attachStreamToVideo(photoVid, cameraStream);
+    } else {
+      cameraStream = fresh;
+      if (photoVid) await _attachStreamToVideo(photoVid, fresh);
+    }
+    _cameraWasActive = _videoWasActive = false;
+    _showReacquireOverlay(false);
+    return true;
+  } finally {
+    _reacquireBusy = false;
+  }
+}
+
+async function _reacquireCameraWithRetry() {
+  _stopReacquireRetry();
+  if (await _reacquireCameraOnce()) return;
+  _reacquireRetryId = setInterval(async () => {
+    if (document.hidden) { _stopReacquireRetry(); return; }
+    if (!_cameraWasActive && !_videoWasActive) { _stopReacquireRetry(); return; }
+    if (await _reacquireCameraOnce()) _stopReacquireRetry();
+  }, 1500);
+}
+
+function _onHidden()  { _stopReacquireRetry(); _releaseAllCameraHardware(); }
+function _onVisible() { _reacquireCameraWithRetry(); }
+
 document.addEventListener('visibilitychange', () => {
   const hidden = document.hidden;
   document.querySelectorAll('#wallGridInline video, #wallGrid video').forEach(v => {
     try { if (hidden) v.pause(); else { const pr = v.play(); if (pr && pr.catch) pr.catch(()=>{}); } } catch(_){}
   });
+  if (hidden) _onHidden(); else _onVisible();
 });
+window.addEventListener('pagehide', _onHidden);
+window.addEventListener('pageshow', (e) => { _onVisible(); });
+window.addEventListener('blur',     _onHidden);
+window.addEventListener('focus',    _onVisible);
 </script>
 
 </body>
