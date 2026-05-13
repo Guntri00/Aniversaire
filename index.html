@@ -865,6 +865,9 @@ if ('serviceWorker' in navigator) {
 
     <div id="step-upload" class="upload-section">
       <button class="back-btn" onclick="goBack()">← Changer de catégorie</button>
+      <div id="upload-disabled-banner" style="display:none;background:#2a1a1a;border:1px solid #c0392b;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#e74c3c;text-align:center">
+        🔒 L'organisateur a désactivé les uploads — la galerie est verrouillée.
+      </div>
       <div class="selected-cat-badge">
         <span id="badge-emoji"></span><span id="badge-name"></span>
       </div>
@@ -1139,15 +1142,26 @@ const VIDEO_MAX_MS = 20000;
 
 async function loadEventConfig() {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/events?id=eq.${EVENT_ID}&select=video_enabled`,
+    const r = await fetch(`${SB_URL}/rest/v1/events?id=eq.${EVENT_ID}&select=video_enabled,uploads_enabled`,
       { headers:{ 'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Accept':'application/json' } });
     if (r.ok) {
       const d = await r.json();
-      if (d[0]) VIDEO_ENABLED = d[0].video_enabled;
+      if (d[0]) {
+        VIDEO_ENABLED  = d[0].video_enabled  ?? false;
+        UPLOAD_ENABLED = d[0].uploads_enabled ?? true;
+      }
       updateVideoUI();
+      updateUploadUI();
     }
   } catch(e) {}
 }
+function updateUploadUI() {
+  const sbtn   = document.getElementById('sbtn');
+  const banner = document.getElementById('upload-disabled-banner');
+  if (sbtn)   sbtn.disabled = !UPLOAD_ENABLED;
+  if (banner) banner.style.display = UPLOAD_ENABLED ? 'none' : 'block';
+}
+
 function updateVideoUI() {
   const btn = document.getElementById('utab-video');
   if (btn) btn.style.display = VIDEO_ENABLED ? 'flex' : 'none';
@@ -1446,6 +1460,7 @@ let selectedFiles    = [];
 let selectedCategory = null;
 let allPhotos        = [];
 let VIDEO_ENABLED    = false;
+let UPLOAD_ENABLED   = true;
 let sliderIntervals  = {};
 let sliderPositions  = {};
 let timerIntervals   = {};   // compte à rebours par photo
@@ -1875,6 +1890,7 @@ async function compressImage(file) {
 }
 
 async function doUpload() {
+  if (!UPLOAD_ENABLED) { showToast('⚠️ Les uploads sont désactivés par l\'organisateur.', true); return; }
   if (!selectedFiles.length || !selectedCategory) return;
   const btn = document.getElementById('sbtn');
   const uploaderName = document.getElementById('uname').value.trim() || 'Invité';
@@ -2480,19 +2496,22 @@ async function startRealtimeFull() {
   // Handler commun pour supprimer une photo de l'UI
   const handleRemotePhotoDelete = (id) => {
     if (!id) return;
-    const existing = allPhotos.find(x => x.id === id);
-    if (!existing) return; // pas une photo de notre événement
-    const cat = existing.category;
-    allPhotos = allPhotos.filter(x => x.id !== id);
-    if (cat) {
-      const cnt = allPhotos.filter(x => x.category === cat).length;
-      const el = document.getElementById('cnt-' + cat);
-      if (el) el.textContent = cnt === 0 ? 'Aucune photo encore' : cnt + ' photo' + (cnt > 1 ? 's' : '');
+    const sid      = String(id);
+    const existing = allPhotos.find(x => String(x.id) === sid);
+    // Mettre à jour allPhotos et compteurs seulement si la photo était connue
+    if (existing) {
+      const cat = existing.category;
+      allPhotos = allPhotos.filter(x => String(x.id) !== sid);
+      if (cat) {
+        const cnt = allPhotos.filter(x => x.category === cat).length;
+        const el = document.getElementById('cnt-' + cat);
+        if (el) el.textContent = cnt === 0 ? 'Aucune photo encore' : cnt + ' photo' + (cnt > 1 ? 's' : '');
+      }
+      const total = document.getElementById('totalCount');
+      if (total) total.textContent = allPhotos.length;
     }
-    const total = document.getElementById('totalCount');
-    if (total) total.textContent = allPhotos.length;
-    // Retirer la tuile galerie détail si présente
-    document.querySelectorAll(`[data-photo-id="${id}"]`).forEach(n => n.remove());
+    // Retirer du DOM dans tous les cas (galerie ouverte ou non)
+    document.querySelectorAll(`[data-photo-id="${sid}"]`).forEach(n => n.remove());
     if (typeof wallOnDelete === 'function') wallOnDelete(id);
   };
 
@@ -2527,9 +2546,14 @@ async function startRealtimeFull() {
       event: 'UPDATE', schema: 'public', table: 'events',
       filter: `id=eq.${EVENT_ID}`
     }, (payload) => {
-      if (payload.new && typeof payload.new.video_enabled !== 'undefined') {
+      if (!payload.new) return;
+      if (typeof payload.new.video_enabled !== 'undefined') {
         VIDEO_ENABLED = payload.new.video_enabled;
         updateVideoUI();
+      }
+      if (typeof payload.new.uploads_enabled !== 'undefined') {
+        UPLOAD_ENABLED = payload.new.uploads_enabled;
+        updateUploadUI();
       }
     })
     .subscribe((status) => {
