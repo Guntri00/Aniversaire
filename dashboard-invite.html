@@ -1768,24 +1768,32 @@ document.addEventListener('keydown',e=>{
 
 // ══ REALTIME — suppression instantanée ══
 let sbClientInvite = null;
+let _inviteChannel = null;
+
 function startRealtimeInvite() {
   if (!window.supabase || !window.supabase.createClient) {
-    // fallback si SDK indisponible : refresh périodique discret
     setInterval(() => { if (!document.hidden) loadPhotos(); }, 60000);
     return;
   }
-  sbClientInvite = window.supabase.createClient(SB_URL, SB_KEY);
-  sbClientInvite
-    .channel('invite-photos')
-    // DELETE sans filtre — payload.old n'a que l'id par défaut ; on vérifie contre allPhotos
+  if (!sbClientInvite) sbClientInvite = window.supabase.createClient(SB_URL, SB_KEY);
+
+  if (_inviteChannel && _inviteChannel.unsubscribe) {
+    try { _inviteChannel.unsubscribe(); } catch(_) {}
+  }
+  _inviteChannel = null;
+
+  _inviteChannel = sbClientInvite
+    .channel('invite-photos-' + EVENT_ID)
+    // DELETE : SANS filtre event_id — payload.old ne contient que la clé primaire
+    // La vérification event_id se fait côté client via allPhotos
     .on('postgres_changes', {
-      event: 'DELETE', schema: 'public', table: 'photos',
-      filter: `event_id=eq.${EVENT_ID}`
+      event: 'DELETE', schema: 'public', table: 'photos'
     }, (payload) => {
       const deletedId = payload.old && payload.old.id;
       if (!deletedId) return;
-      if (!allPhotos.find(p => p.id === deletedId)) return;
-      allPhotos = allPhotos.filter(p => p.id !== deletedId);
+      const sid = String(deletedId);
+      if (!allPhotos.find(p => String(p.id) === sid)) return; // pas notre événement
+      allPhotos = allPhotos.filter(p => String(p.id) !== sid);
       removePhotoCardIncremental(deletedId);
       try { ssOnPhotoDeleted(deletedId); } catch(_) {}
       updateUI();
@@ -1794,15 +1802,23 @@ function startRealtimeInvite() {
       event: 'INSERT', schema: 'public', table: 'photos',
       filter: `event_id=eq.${EVENT_ID}`
     }, (payload) => {
-      if (payload.new && !allPhotos.find(p => p.id === payload.new.id)) {
+      if (payload.new && !allPhotos.find(p => String(p.id) === String(payload.new.id))) {
         allPhotos.unshift(payload.new);
         addPhotoCardIncremental(payload.new);
         try { ssOnPhotoInserted(payload.new); } catch(_) {}
         updateUI();
       }
     })
-    .subscribe((status) => {
+    .subscribe((status, err) => {
       console.log('[Realtime invité] Statut:', status);
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[Realtime invité] Reconnexion dans 4s…', err || '');
+        _inviteChannel = null;
+        setTimeout(startRealtimeInvite, 4000);
+      } else if (status === 'CLOSED') {
+        _inviteChannel = null;
+        setTimeout(startRealtimeInvite, 4000);
+      }
     });
 }
 
