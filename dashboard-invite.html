@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Espace invité·e d'honneur — Anniversaire</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -605,6 +605,282 @@ footer em{font-style:italic;font-family:'Playfair Display',serif;font-size:12px;
   .ss-touch-prev,.ss-touch-next{width:20%}
 }
 
+/* Birthday guest redesign */
+:root{
+  --rose:#fff0f7;
+  --rose-d:#ffe0ec;
+  --blush:#ff8fb7;
+  --rouge:#ff4d8d;
+  --gold:#ffd447;
+  --gold-l:#ffe987;
+  --gold-d:#ffb000;
+  --dark:#241341;
+  --brown:#3b1f63;
+  --stone:#7c6b8f;
+  --cream:#fff8ec;
+  --warm:#ffffff;
+  --blue:#00a6ff;
+  --green:#7ee081;
+  --coral:#ff7a59;
+}
+body{
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255,212,71,.26) 0 11%, transparent 12%),
+    radial-gradient(circle at 90% 14%, rgba(0,166,255,.18) 0 10%, transparent 11%),
+    linear-gradient(145deg,#fff8ec,#fff0f7 50%,#eef8ff);
+  color:var(--dark);
+}
+body::after{
+  opacity:.38;
+  background-image:
+    linear-gradient(90deg,rgba(255,77,141,.24) 0 9px,transparent 9px),
+    linear-gradient(90deg,rgba(0,166,255,.18) 0 9px,transparent 9px),
+    linear-gradient(90deg,rgba(255,212,71,.26) 0 9px,transparent 9px);
+  background-size:90px 90px,132px 132px,164px 164px;
+  background-position:16px 20px,54px 72px,88px 12px;
+  mask-image:linear-gradient(#000,transparent 82%);
+}
+.login-page{
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255,212,71,.34), transparent 24%),
+    linear-gradient(145deg,#ff4d8d,#7b3cff 58%,#00a6ff);
+}
+.petal{opacity:.22}
+.login-ornament .ring::before{content:'🎂'}
+.login-ornament .ring{font-size:0}
+.login-ornament .ring::before{font-size:56px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.22))}
+.login-title,.hero-names{
+  font-family:'Fredoka','Playfair Display',serif;
+  font-weight:700;
+  letter-spacing:0;
+}
+.login-title{color:#fff;text-shadow:0 5px 0 rgba(36,19,65,.22)}
+.login-title em,.hero-names em{font-style:normal;color:var(--gold)}
+.login-date,.login-field label{color:rgba(255,255,255,.78)}
+.login-divider-line{background:rgba(255,255,255,.30)}
+.login-divider span{color:#fff;opacity:.85}
+.login-box{
+  max-width:380px;
+  padding:28px;
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:28px;
+  box-shadow:0 26px 74px rgba(18,8,45,.28);
+  backdrop-filter:blur(14px);
+}
+.login-field input{
+  border-radius:16px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.34);
+  color:#fff;
+}
+.login-field input:focus{border-color:#fff;background:rgba(255,255,255,.24)}
+.login-field input::placeholder{color:rgba(255,255,255,.48)}
+.login-submit{
+  border-radius:999px;
+  background:linear-gradient(135deg,var(--gold),var(--coral));
+  color:var(--dark);
+  font-weight:700;
+  box-shadow:0 14px 28px rgba(0,0,0,.18);
+}
+.login-submit:hover{box-shadow:0 18px 34px rgba(0,0,0,.22)}
+.hero{
+  padding-bottom:42px;
+  background:
+    linear-gradient(145deg,rgba(36,19,65,.94),rgba(123,60,255,.80) 55%,rgba(0,166,255,.72)),
+    radial-gradient(circle at 50% 0,rgba(255,212,71,.35),transparent 38%);
+  border-radius:0 0 42px 42px;
+  box-shadow:0 24px 54px rgba(36,19,65,.18);
+}
+.hero::before{
+  content:'🎈 🎊 🎂 🎁';
+  position:absolute;left:50%;top:84px;transform:translateX(-50%);
+  font-size:clamp(32px,6vw,52px);letter-spacing:.16em;opacity:.90;
+  filter:drop-shadow(0 12px 18px rgba(0,0,0,.22));
+}
+.hero::after{display:none}
+.hero-topbar{padding-bottom:96px}
+.hero-logo{font-family:'Fredoka',sans-serif;font-weight:700;color:rgba(255,255,255,.72)}
+.hero-logo::before{content:'🎉 '}
+.hero-logout{
+  border-radius:999px;
+  border-color:rgba(255,255,255,.25);
+  color:rgba(255,255,255,.76);
+}
+.hero-logout:hover{background:rgba(255,255,255,.12);color:#fff;border-color:#fff}
+.hero-ring{display:none}
+.hero-names{
+  color:#fff;
+  text-shadow:0 5px 0 rgba(36,19,65,.24);
+}
+.hero-date{
+  display:inline-flex;
+  padding:9px 16px;
+  border-radius:999px;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.28);
+  color:#fff;
+}
+.hero-tagline{color:rgba(255,255,255,.80)}
+.hero-stats{
+  background:rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.26);
+  border-radius:26px;
+  padding:16px 24px;
+  backdrop-filter:blur(12px);
+}
+.hero-stat-val{font-family:'Fredoka',sans-serif;font-weight:700;color:var(--gold)}
+.hero-stat-lbl{color:rgba(255,255,255,.74)}
+.hero-stat-sep{color:rgba(255,255,255,.28)}
+.body{max-width:1120px}
+.dl-card,.photo-card,.ss-card,.modal,.download-panel,.filter-card{
+  border-radius:22px!important;
+  border:2px solid rgba(255,255,255,.78)!important;
+  background:rgba(255,255,255,.80)!important;
+  box-shadow:0 18px 42px rgba(36,19,65,.10)!important;
+}
+.dl-card{transition:transform .25s,box-shadow .25s}
+.dl-card:hover,.photo-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 24px 52px rgba(255,77,141,.16)!important;
+}
+.dl-card .ico,.photo-empty .ei{filter:drop-shadow(0 8px 12px rgba(255,77,141,.20))}
+.photo-grid{gap:16px}
+.photo-card{overflow:hidden}
+.photo-card img,.video-thumb{border-radius:18px 18px 0 0}
+.photo-card-meta{
+  background:#fff;
+  color:var(--dark);
+  padding:11px 12px;
+}
+.photo-meta-name{color:var(--dark);font-weight:500}
+.photo-meta-time{color:var(--stone)}
+.photo-overlay{background:linear-gradient(transparent,rgba(36,19,65,.62))}
+.photo-dl-btn{
+  background:#fff;
+  color:var(--rouge);
+  box-shadow:0 10px 24px rgba(36,19,65,.18);
+}
+.photo-dl-btn:hover{background:linear-gradient(135deg,var(--rouge),var(--coral));color:#fff}
+.photo-empty{
+  background:rgba(255,255,255,.70);
+  border:2px dashed rgba(255,77,141,.24);
+  border-radius:24px;
+  color:var(--stone);
+}
+.ss-card h2,.section-title,.dl-card-title{font-family:'Fredoka',sans-serif;font-weight:700;color:var(--dark)}
+.btn,.dl-btn,.ss-btn,.filter-btn{
+  border-radius:999px!important;
+  font-family:'Lato','Jost',sans-serif;
+  font-weight:700;
+}
+.dl-btn,.ss-btn.primary,.filter-btn.active{
+  background:linear-gradient(135deg,var(--rouge),var(--coral))!important;
+  color:#fff!important;
+  box-shadow:0 12px 24px rgba(255,77,141,.24);
+}
+.dl-btn:hover,.ss-btn.primary:hover,.filter-btn.active:hover{
+  background:linear-gradient(135deg,var(--blue),var(--rouge))!important;
+  transform:translateY(-2px);
+}
+.ss-footer{background:linear-gradient(transparent,rgba(36,19,65,.84))}
+.lb,.slideshow{background:rgba(16,8,32,.94);backdrop-filter:blur(10px)}
+.lb img,.lb video,.ss-media img,.ss-media video{border-radius:20px}
+@media (max-width: 640px){
+  .hero{border-radius:0 0 30px 30px}
+  .hero-topbar{padding-bottom:78px}
+  .hero::before{top:78px;font-size:30px;letter-spacing:.08em}
+  .hero-stats{flex-wrap:wrap;gap:14px}
+}
+/* Midnight carnival guest redesign */
+:root{
+  --rose:#12072f;--rose-d:rgba(255,61,242,.24);--blush:#ff9bf8;--rouge:#ff3df2;
+  --gold:#fff34d;--gold-l:#fff9a2;--gold-d:#e8d900;--dark:#fffaff;--brown:#140a36;
+  --stone:#bcb4ff;--cream:#0a0620;--warm:#fffaff;--blue:#28e7ff;--green:#48ff9b;--coral:#ff6a3d;
+}
+body{
+  background:
+    radial-gradient(circle at 10% 8%,rgba(255,61,242,.28),transparent 28%),
+    radial-gradient(circle at 90% 12%,rgba(40,231,255,.22),transparent 30%),
+    linear-gradient(145deg,#070316 0%,#150634 48%,#061b3d 100%);
+  color:#fffaff;
+}
+body::after{
+  opacity:.74;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.30) 0 1px,transparent 2px),
+    linear-gradient(90deg,rgba(255,61,242,.42) 0 8px,transparent 8px),
+    linear-gradient(90deg,rgba(40,231,255,.34) 0 8px,transparent 8px);
+  background-size:38px 38px,112px 112px,154px 154px;
+  mask-image:linear-gradient(#000,transparent 86%);
+}
+.login-page{
+  background:
+    radial-gradient(circle at 35% 25%,rgba(255,61,242,.55),transparent 28%),
+    radial-gradient(circle at 72% 32%,rgba(40,231,255,.45),transparent 31%),
+    linear-gradient(145deg,#05020d,#1d0752 56%,#062447);
+}
+.petal,.hero-petal{display:none}
+.login-box,.dl-card,.photo-card,.ss-card,.modal,.download-panel,.filter-card,.hero-stats{
+  background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.05))!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.18)!important;
+  backdrop-filter:blur(20px);
+}
+.login-ornament .ring::before{content:'✦';color:#28e7ff;text-shadow:0 0 30px rgba(40,231,255,.65)}
+.login-title,.hero-names{color:#fff;text-shadow:0 0 24px rgba(255,61,242,.50),0 0 54px rgba(40,231,255,.24)}
+.login-title em,.hero-names em{color:#fff34d}
+.login-date,.login-field label,.hero-date,.hero-tagline,.hero-stat-lbl,.photo-meta-time{color:#bcb4ff}
+.login-field input{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;
+}
+.login-submit,.dl-btn,.ss-btn.primary,.filter-btn.active{
+  background:linear-gradient(135deg,#fff34d,#28e7ff)!important;
+  color:#09051b!important;
+  box-shadow:0 0 26px rgba(40,231,255,.30),0 14px 34px rgba(0,0,0,.28)!important;
+}
+.hero{
+  background:
+    radial-gradient(circle at 28% 22%,rgba(255,61,242,.48),transparent 28%),
+    radial-gradient(circle at 76% 30%,rgba(40,231,255,.38),transparent 32%),
+    linear-gradient(145deg,rgba(5,2,13,.96),rgba(29,7,82,.90) 58%,rgba(6,36,71,.92));
+  border-bottom:1px solid rgba(255,255,255,.16);
+}
+.hero::before{
+  content:'';
+  top:92px;left:50%;width:min(680px,86vw);height:160px;
+  transform:translateX(-50%);
+  border-radius:999px;
+  background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);
+  filter:blur(12px);
+}
+.hero-logo{color:#fff}.hero-logo::before{content:'✦ ';color:#28e7ff}
+.hero-logout{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.18);
+  color:#fff;
+}
+.hero-date{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);
+}
+.hero-stat-val{color:#fff34d;text-shadow:0 0 18px rgba(255,243,77,.34)}
+.dl-card:hover,.photo-card:hover{
+  box-shadow:0 24px 80px rgba(255,61,242,.20),0 0 38px rgba(40,231,255,.16)!important;
+}
+.dl-card-title,.ss-card h2,.section-title,.photo-meta-name{color:#fff}
+.dl-card p,.ss-card p,.photo-empty{color:#bcb4ff}
+.photo-card-meta{background:rgba(5,2,13,.84)}
+.photo-overlay{background:linear-gradient(transparent,rgba(5,2,13,.86))}
+.photo-dl-btn{background:linear-gradient(135deg,#fff34d,#28e7ff);color:#09051b}
+.photo-empty{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+.ss-footer{background:linear-gradient(transparent,rgba(5,2,13,.92))}
+.lb,.slideshow{background:rgba(5,2,13,.94)}
+@media (max-width:640px){
+  .hero::before{top:80px;height:120px}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">

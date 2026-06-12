@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/caption.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
       "source": "/",

@@ -1,94 +1,88 @@
-// ══════════════════════════════════════════════
-//  ANNIVERSAIRE — Service Worker PWA
-//  Stratégie : Cache-First pour assets statiques
-//              Network-First pour photos Supabase
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// Anniversaire 2026 — Service Worker (PWA)
+// ──────────────────────────────────────────────────────────────────
+// VERSIONING : bumper SW_VERSION à chaque déploiement significatif.
+// → purge automatique des anciens caches + update notif côté client.
+// ══════════════════════════════════════════════════════════════════
 
-const CACHE_NAME    = 'anniv-v1';
-const CACHE_STATIC  = 'anniv-static-v1';
-const CACHE_PHOTOS  = 'anniv-photos-v1';
+const SW_VERSION   = '2026-05-13-b';                 // ← bump à chaque deploy
+const CACHE_STATIC = `aniv01-static-${SW_VERSION}`;
+const CACHE_PHOTOS = `aniv01-photos-${SW_VERSION}`;
 
-// Assets statiques à mettre en cache immédiatement
+// Seuls les assets same-origin sont mis en cache au install
 const STATIC_ASSETS = [
   '/index.html',
-  '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600&display=swap'
+  '/manifest.json'
 ];
 
-// ── Installation : mise en cache des assets statiques ──
+// ── INSTALL ──
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_STATIC)
-      .then((cache) => {
-        console.log('[SW] Mise en cache des assets statiques');
-        return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { mode: 'no-cors' })));
-      })
+      .then((cache) => cache.addAll(STATIC_ASSETS))
       .then(() => self.skipWaiting())
-      .catch((err) => console.warn('[SW] Erreur cache install:', err))
+      .catch(() => self.skipWaiting())
   );
 });
 
-// ── Activation : nettoyage des anciens caches ──
+// ── ACTIVATE : purge tout cache dont le nom ne matche pas la version courante ──
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_STATIC && name !== CACHE_PHOTOS)
-          .map(name => {
-            console.log('[SW] Suppression ancien cache:', name);
-            return caches.delete(name);
-          })
+      Promise.all(cacheNames
+        .filter(name => name !== CACHE_STATIC && name !== CACHE_PHOTOS)
+        .map(name => caches.delete(name))
       )
     ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch : stratégie intelligente par type de ressource ──
+// ── MESSAGE : permet au client de forcer l'activation ──
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ── FETCH ──
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  if (request.method !== 'GET') return;
   const url = new URL(request.url);
 
-  // Ignorer les requêtes non-GET
-  if (request.method !== 'GET') return;
-
-  // ── Photos Supabase : Network-First avec cache fallback ──
+  // Photos Supabase : network-first + cache fallback
   if (url.hostname.includes('supabase.co') && url.pathname.includes('/storage/')) {
     event.respondWith(networkFirstWithCache(request, CACHE_PHOTOS, 5000));
     return;
   }
-
-  // ── API Supabase REST : Network-Only (données temps réel) ──
+  // API REST : pass-through
   if (url.hostname.includes('supabase.co') && url.pathname.includes('/rest/')) {
-    return; // Laisser passer sans cache
+    return;
   }
-
-  // ── Polices Google : Cache-First (immutables) ──
+  // Fonts : cache-first
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     event.respondWith(cacheFirstWithNetwork(request, CACHE_STATIC));
     return;
   }
-
-  // ── Assets statiques locaux : Cache-First ──
-  if (url.hostname === self.location.hostname) {
-    event.respondWith(cacheFirstWithNetwork(request, CACHE_STATIC));
+  // HTML : network-first (fix : l'ancien SW faisait cache-first → bug updates)
+  const isHTML = url.hostname === self.location.hostname
+              && (url.pathname === '/' || url.pathname.endsWith('.html') || request.mode === 'navigate');
+  if (isHTML) {
+    event.respondWith(networkFirstWithCache(request, CACHE_STATIC, 4000));
     return;
+  }
+  // Autres assets same-origin : stale-while-revalidate
+  if (url.hostname === self.location.hostname) {
+    event.respondWith(staleWhileRevalidate(request, CACHE_STATIC));
   }
 });
 
-// ── Network-First : essaie le réseau, fallback cache ──
 async function networkFirstWithCache(request, cacheName, timeoutMs) {
   const cache = await caches.open(cacheName);
-
   try {
     const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), timeoutMs);
-    const response   = await fetch(request, { signal: controller.signal });
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const response = await fetch(request, { signal: controller.signal });
     clearTimeout(timeout);
-
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
-    }
+    if (response && response.status === 200) cache.put(request, response.clone());
     return response;
   } catch {
     const cached = await cache.match(request);
@@ -96,44 +90,35 @@ async function networkFirstWithCache(request, cacheName, timeoutMs) {
   }
 }
 
-// ── Cache-First : retourne le cache, fetch si absent ──
 async function cacheFirstWithNetwork(request, cacheName) {
-  const cache  = await caches.open(cacheName);
+  const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
-
   if (cached) return cached;
-
   try {
     const response = await fetch(request);
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
-    }
+    if (response && response.status === 200) cache.put(request, response.clone());
     return response;
   } catch {
     return new Response('', { status: 503 });
   }
 }
 
-// ── Background Sync : upload en attente si hors-ligne ──
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'upload-photo') {
-    event.waitUntil(processPendingUploads());
-  }
-});
-
-async function processPendingUploads() {
-  // Récupérer les uploads en attente depuis IndexedDB
-  // (à connecter avec la logique d'upload de l'app)
-  console.log('[SW] Traitement des uploads en attente...');
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  const netPromise = fetch(request).then((response) => {
+    if (response && response.status === 200) cache.put(request, response.clone());
+    return response;
+  }).catch(() => null);
+  return cached || (await netPromise) || new Response('', { status: 503 });
 }
 
-// ── Push Notifications (pour plus tard) ──
+// ── Push Notifications (non utilisé pour l'instant) ──
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   const data = event.data.json();
-
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Anniversaire', {
+    self.registration.showNotification(data.title || 'Anniversaire 2026', {
       body:    data.body || 'Nouvelle photo partagée !',
       icon:    '/icons/icon-192.png',
       badge:   '/icons/icon-192.png',
@@ -145,7 +130,5 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data.url || '/')
-  );
+  event.waitUntil(clients.openWindow(event.notification.data.url || '/'));
 });

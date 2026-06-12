@@ -1,12 +1,12 @@
 {
-  "name": "Anniversaire — Vos souvenirs de fête",
-  "short_name": "Anniversaire",
+  "name": "Anniversaire 2026 — Vos souvenirs de fête",
+  "short_name": "Anniversaire 2026",
   "description": "Partagez vos photos d'anniversaire instantanément",
   "start_url": "/index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#23142A",
-  "theme_color": "#E63D7A",
+  "background_color": "#6D28D9",
+  "theme_color": "#8B5CF6",
   "lang": "fr",
   "categories": [
     "photography",
