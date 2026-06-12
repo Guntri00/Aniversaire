@@ -1414,6 +1414,58 @@ h1 em{
   .tabs{border-radius:22px;margin-left:10px;margin-right:10px}
   .tab{min-height:42px}
 }
+/* Elegant cinematic 3D intro */
+#introScreen{
+  background:
+    radial-gradient(circle at 50% 40%,rgba(234,196,112,.20),transparent 24%),
+    radial-gradient(circle at 18% 20%,rgba(113,83,255,.16),transparent 30%),
+    linear-gradient(145deg,#030208 0%,#10091f 46%,#05030b 100%);
+}
+#introScreen::before{
+  background:
+    radial-gradient(circle at 50% 44%,rgba(255,226,158,.22),transparent 26%),
+    linear-gradient(115deg,transparent 0 45%,rgba(255,255,255,.055) 49%,transparent 54%);
+  animation:introLuxurySweep 8s ease-in-out infinite alternate;
+}
+@keyframes introLuxurySweep{
+  from{transform:translateX(-3%) rotate(-3deg);opacity:.65}
+  to{transform:translateX(3%) rotate(3deg);opacity:.95}
+}
+#introBurst{
+  opacity:.55;
+  background-image:
+    radial-gradient(circle,rgba(255,230,173,.58) 0 1px,transparent 2px),
+    radial-gradient(circle,rgba(255,255,255,.22) 0 1px,transparent 2px);
+  background-size:72px 72px,118px 118px;
+  animation:introDustDrift 9s linear infinite;
+}
+@keyframes introDustDrift{
+  to{background-position:0 180px,118px 260px}
+}
+#intro3d{
+  width:min(94vw,820px);
+  height:min(62vh,540px);
+  filter:drop-shadow(0 34px 48px rgba(0,0,0,.55));
+}
+#introTitle{
+  color:#fff8e6;
+  letter-spacing:.01em;
+  text-shadow:0 0 26px rgba(234,196,112,.34),0 18px 48px rgba(0,0,0,.62);
+}
+#introSub{
+  color:#d9b86f;
+  letter-spacing:.22em;
+  font-size:clamp(12px,2.8vw,16px);
+}
+#introTap{
+  background:rgba(255,248,230,.08);
+  color:#fff8e6;
+  border:1px solid rgba(234,196,112,.46);
+  box-shadow:0 0 30px rgba(234,196,112,.16),0 18px 42px rgba(0,0,0,.45);
+  backdrop-filter:blur(18px);
+}
+#introFallback .fallback-balloon{display:none}
+#introCake{filter:drop-shadow(0 22px 34px rgba(234,196,112,.25))}
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 
@@ -1456,6 +1508,34 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- Vercel Web Analytics (sans cookie) — porté de la soirée -->
+<script defer src="/_vercel/insights/script.js"></script>
+<style>
+/* ── Contact memento.memorie (porté de la soirée) ── */
+.contact-btn{position:fixed;top:14px;right:14px;z-index:900;border:none;cursor:pointer;
+  padding:9px 16px;border-radius:999px;font-family:'Jost',sans-serif;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:#2D3748;
+  background:rgba(255,255,255,.9);box-shadow:0 8px 22px rgba(42,14,34,.18),inset 0 0 0 1px rgba(255,209,102,.5);
+  transition:transform .15s ease}
+.contact-btn:active{transform:scale(.95)}
+.contact-pop{position:fixed;top:56px;right:14px;z-index:900;display:none;flex-direction:column;
+  gap:9px;align-items:center;text-align:center;padding:18px 20px;border-radius:18px;background:#fff;
+  box-shadow:0 18px 46px rgba(42,14,34,.3),inset 0 0 0 1px rgba(255,209,102,.45);
+  font-family:'Jost',sans-serif;font-size:13px;max-width:calc(100vw - 28px)}
+.contact-pop.open{display:flex;animation:toastRiseInline .25s ease both}
+.contact-pop img{width:36px;height:36px;border-radius:9px;display:block}
+.contact-pop .cp-brand{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:18px;color:var(--charcoal)}
+.contact-pop a{color:var(--gold);text-decoration:none;letter-spacing:.04em}
+.contact-pop a:hover{text-decoration:underline}
+@keyframes toastRiseInline{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ── Charte d'utilisation & droit à l'image (porté de la soirée) ── */
+.charte-modal{max-width:480px;width:100%;text-align:left}
+.charte-text{text-align:left;font-size:12.5px;line-height:1.62;color:var(--dark);max-height:56vh;overflow-y:auto;margin:8px 0 16px;-webkit-overflow-scrolling:touch}
+.charte-text h4{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:15px;margin:13px 0 3px;color:var(--charcoal)}
+.charte-text p{margin:0 0 7px}
+.charte-text a{color:var(--gold)}
+.brand-logo-foot{width:20px;height:20px;border-radius:5px;vertical-align:-5px;margin-right:6px}
+</style>
 </head>
 <body>
 <!-- 🎉🎂🎈🎁 -->
@@ -1508,100 +1588,123 @@ if ('serviceWorker' in navigator) {
     var scene = new THREE.Scene();
     var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
 
-    var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-    camera.position.set(0, 1.2, 8.2);
+    var camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+    camera.position.set(0, 1.25, 8.6);
 
-    var cake = new THREE.Group();
-    scene.add(cake);
+    var stage = new THREE.Group();
+    scene.add(stage);
 
-    var hemi = new THREE.HemisphereLight(0xffffff, 0x7b3cff, 2.2);
-    scene.add(hemi);
-    var key = new THREE.DirectionalLight(0xffffff, 2.9);
-    key.position.set(4, 5, 5);
+    var ambient = new THREE.HemisphereLight(0xfff6df, 0x08030f, 1.15);
+    scene.add(ambient);
+    var key = new THREE.DirectionalLight(0xfff1c8, 3.1);
+    key.position.set(3.8, 5.5, 5.4);
     scene.add(key);
-    var rim = new THREE.PointLight(0xffe600, 3.2, 18);
-    rim.position.set(-3.2, 2.8, 4.2);
+    var rim = new THREE.PointLight(0xd0a85b, 4.4, 16);
+    rim.position.set(-3.8, 2.4, 4.5);
     scene.add(rim);
+    var cool = new THREE.PointLight(0x7153ff, 1.1, 12);
+    cool.position.set(3.6, 1.7, 2.5);
+    scene.add(cool);
 
-    function makeMat(color, roughness, metalness) {
+    function standard(color, roughness, metalness) {
       return new THREE.MeshStandardMaterial({
         color: color,
-        roughness: roughness == null ? .42 : roughness,
-        metalness: metalness == null ? .04 : metalness
+        roughness: roughness == null ? .34 : roughness,
+        metalness: metalness == null ? .18 : metalness
       });
     }
 
-    var pink = makeMat(0xff2f92);
-    var yellow = makeMat(0xffe600, .34, .08);
-    var blue = makeMat(0x00c2ff);
-    var green = makeMat(0x41ef8b);
-    var purple = makeMat(0x7b3cff);
-    var coral = makeMat(0xff6b35);
-    var white = makeMat(0xffffff, .25, .02);
-    var flameMat = new THREE.MeshBasicMaterial({ color: 0xfff36b });
+    var obsidian = standard(0x151019, .38, .18);
+    var graphite = standard(0x27202c, .42, .12);
+    var cream = standard(0xfff1dc, .28, .04);
+    var champagne = standard(0xd7b56d, .24, .62);
+    var wax = standard(0xf8ead7, .32, .03);
+    var flameMat = new THREE.MeshBasicMaterial({ color: 0xffd98a });
+    var glowMat = new THREE.MeshBasicMaterial({ color: 0xd7b56d, transparent: true, opacity: .16, depthWrite: false });
 
-    function cylinder(rt, rb, h, y, material) {
-      var mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 80), material);
+    function addCylinder(rt, rb, h, y, material, radiusSegments) {
+      var mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, radiusSegments || 96), material);
       mesh.position.y = y;
-      cake.add(mesh);
+      stage.add(mesh);
       return mesh;
     }
 
-    cylinder(2.08, 2.28, .78, -.95, pink);
-    cylinder(2.18, 2.18, .14, -.48, white);
-    cylinder(1.50, 1.68, .70, -.24, yellow);
-    cylinder(1.62, 1.62, .13, .18, white);
-    cylinder(.98, 1.12, .58, .62, coral);
-    cylinder(1.08, 1.08, .12, .98, white);
+    function roundedTier(width, height, depth, y, material, radius) {
+      var w = width / 2;
+      var h = height / 2;
+      var r = Math.min(radius || .18, w - .02, h - .02);
+      var shape = new THREE.Shape();
+      shape.moveTo(-w + r, -h);
+      shape.lineTo(w - r, -h);
+      shape.quadraticCurveTo(w, -h, w, -h + r);
+      shape.lineTo(w, h - r);
+      shape.quadraticCurveTo(w, h, w - r, h);
+      shape.lineTo(-w + r, h);
+      shape.quadraticCurveTo(-w, h, -w, h - r);
+      shape.lineTo(-w, -h + r);
+      shape.quadraticCurveTo(-w, -h, -w + r, -h);
+      var geo = new THREE.ExtrudeGeometry(shape, {
+        depth: depth,
+        bevelEnabled: true,
+        bevelThickness: .045,
+        bevelSize: .045,
+        bevelSegments: 10,
+        curveSegments: 16
+      });
+      geo.translate(0, 0, -depth / 2);
+      var mesh = new THREE.Mesh(geo, material);
+      mesh.position.y = y;
+      stage.add(mesh);
+      return mesh;
+    }
+
+    var plinth = addCylinder(2.75, 2.95, .18, -1.38, champagne, 128);
+    plinth.scale.z = .44;
+    var lower = roundedTier(3.65, .68, 1.86, -.96, obsidian, .24);
+    var lowerBand = roundedTier(3.82, .075, 1.98, -.55, champagne, .20);
+    var middle = roundedTier(2.86, .58, 1.54, -.26, graphite, .21);
+    var middleBand = roundedTier(3.02, .065, 1.64, .08, champagne, .18);
+    var top = roundedTier(1.92, .46, 1.08, .48, cream, .18);
+    var topBand = roundedTier(2.04, .058, 1.18, .76, champagne, .16);
 
     var candleGroup = new THREE.Group();
-    cake.add(candleGroup);
-    [-.48, 0, .48].forEach(function(x, i) {
-      var candle = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .62, 24), i === 1 ? blue : purple);
-      candle.position.set(x, 1.42, i === 1 ? .06 : .02);
+    stage.add(candleGroup);
+    [-.46, 0, .46].forEach(function(x, i) {
+      var candle = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .58, 24), wax);
+      candle.position.set(x, 1.08, i === 1 ? .05 : .02);
       candleGroup.add(candle);
-      var flame = new THREE.Mesh(new THREE.SphereGeometry(.13, 24, 16), flameMat);
-      flame.scale.set(.72, 1.25, .72);
-      flame.position.set(x, 1.82, candle.position.z);
+
+      var wick = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .13, 8), standard(0x1c1410, .5, 0));
+      wick.position.set(x, 1.43, candle.position.z);
+      candleGroup.add(wick);
+
+      var flame = new THREE.Mesh(new THREE.SphereGeometry(.105, 24, 16), flameMat);
+      flame.scale.set(.52, 1.55, .52);
+      flame.position.set(x, 1.57, candle.position.z);
       candleGroup.add(flame);
     });
 
-    function addBalloon(x, y, z, material, scale) {
-      var balloon = new THREE.Group();
-      var body = new THREE.Mesh(new THREE.SphereGeometry(.38, 32, 32), material);
-      body.scale.set(.88, 1.18, .88);
-      balloon.add(body);
-      var knot = new THREE.Mesh(new THREE.ConeGeometry(.08, .16, 16), material);
-      knot.rotation.x = Math.PI;
-      knot.position.y = -.45;
-      balloon.add(knot);
-      var string = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.05, 8), white);
-      string.position.y = -1.02;
-      balloon.add(string);
-      balloon.position.set(x, y, z);
-      balloon.scale.setScalar(scale || 1);
-      scene.add(balloon);
-      return balloon;
-    }
+    var halo = new THREE.Mesh(new THREE.TorusGeometry(2.5, .012, 12, 180), champagne);
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = -1.18;
+    stage.add(halo);
 
-    var balloons = [
-      addBalloon(-2.95, 1.65, -.8, blue, 1.05),
-      addBalloon(2.95, 1.45, -.7, green, .95),
-      addBalloon(-2.05, 2.55, -.9, yellow, .74),
-      addBalloon(2.1, 2.35, -.9, pink, .78)
-    ];
+    var backHalo = new THREE.Mesh(new THREE.TorusGeometry(2.25, .018, 12, 180), glowMat);
+    backHalo.position.set(0, .12, -1.1);
+    stage.add(backHalo);
 
-    var confetti = new THREE.Group();
-    scene.add(confetti);
-    var mats = [pink, yellow, blue, green, purple, coral, white];
-    for (var i = 0; i < 120; i++) {
-      var piece = new THREE.Mesh(new THREE.BoxGeometry(.055, .19, .018), mats[i % mats.length]);
-      piece.position.set((Math.random() - .5) * 8.8, Math.random() * 5.4 - .5, (Math.random() - .5) * 3);
-      piece.rotation.set(Math.random() * 4, Math.random() * 4, Math.random() * 4);
-      piece.userData.speed = .012 + Math.random() * .032;
-      piece.userData.spin = .025 + Math.random() * .07;
-      confetti.add(piece);
+    var particles = new THREE.Group();
+    scene.add(particles);
+    var particleMat = new THREE.MeshBasicMaterial({ color: 0xeac470, transparent: true, opacity: .72 });
+    for (var i = 0; i < 150; i++) {
+      var p = new THREE.Mesh(new THREE.SphereGeometry(.012 + Math.random() * .018, 10, 8), particleMat);
+      p.position.set((Math.random() - .5) * 7.4, Math.random() * 4.4 - 1.9, (Math.random() - .5) * 3.4);
+      p.userData.speed = .002 + Math.random() * .008;
+      p.userData.drift = Math.random() * Math.PI * 2;
+      particles.add(p);
     }
 
     var clock = new THREE.Clock();
@@ -1617,23 +1720,24 @@ if ('serviceWorker' in navigator) {
 
     function animate() {
       var t = clock.getElapsedTime();
-      cake.rotation.y = Math.sin(t * .78) * .24;
-      cake.rotation.x = Math.sin(t * .52) * .055;
-      cake.position.y = Math.sin(t * 1.45) * .08;
+      stage.rotation.y = Math.sin(t * .34) * .16;
+      stage.rotation.x = Math.sin(t * .25) * .025;
+      stage.position.y = Math.sin(t * .7) * .035;
+      halo.rotation.z = t * .16;
+      backHalo.rotation.z = -t * .08;
       candleGroup.children.forEach(function(child, idx) {
-        if (idx % 2 === 1) child.scale.set(.72 + Math.sin(t * 9 + idx) * .08, 1.18 + Math.sin(t * 10 + idx) * .16, .72);
+        if (idx % 3 === 2) {
+          var flicker = Math.sin(t * 8.5 + idx) * .08 + Math.sin(t * 15 + idx) * .035;
+          child.scale.set(.52 + flicker, 1.48 + flicker * 1.5, .52 + flicker);
+        }
       });
-      balloons.forEach(function(balloon, idx) {
-        balloon.position.y += Math.sin(t * 1.2 + idx) * .002;
-        balloon.rotation.z = Math.sin(t * 1.1 + idx) * .08;
-      });
-      confetti.children.forEach(function(piece) {
-        piece.position.y -= piece.userData.speed;
-        piece.rotation.x += piece.userData.spin;
-        piece.rotation.z += piece.userData.spin * .7;
-        if (piece.position.y < -2.8) {
-          piece.position.y = 4.4 + Math.random();
-          piece.position.x = (Math.random() - .5) * 8.8;
+      particles.children.forEach(function(p, idx) {
+        p.position.y += p.userData.speed;
+        p.position.x += Math.sin(t * .45 + p.userData.drift) * .002;
+        p.material.opacity = .42 + Math.sin(t * 1.2 + idx) * .20;
+        if (p.position.y > 2.7) {
+          p.position.y = -2.1;
+          p.position.x = (Math.random() - .5) * 7.4;
         }
       });
       renderer.render(scene, camera);
@@ -2016,7 +2120,7 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<footer><p>🎉 Propulsé par <a href="#">Souvenir</a> &nbsp;·&nbsp; tous vos moments de fête réunis 🎂</p></footer>
+<footer><p>🎉 Propulsé par <a href="#">Souvenir</a> &nbsp;·&nbsp; tous vos moments de fête réunis 🎂 &nbsp;·&nbsp; <a href="#" onclick="event.preventDefault();openCharte();return false;">Charte &amp; droit à l'image</a></p></footer>
 
 <script>
 
@@ -4175,6 +4279,53 @@ window.addEventListener('pagehide', _onHidden);
 window.addEventListener('pageshow', (e) => { _onVisible(); });
 window.addEventListener('blur',     _onHidden);
 window.addEventListener('focus',    _onVisible);
+</script>
+
+<!-- Contact memento.memorie (porté de la soirée) -->
+<button class="contact-btn" id="contactBtn" aria-haspopup="dialog" aria-expanded="false" onclick="toggleContact(event)">✉️ Contact</button>
+<div class="contact-pop" id="contactPop" role="dialog" aria-label="Coordonnées de contact">
+  <img src="/logo-memento.svg" alt="">
+  <div class="cp-brand">memento.memorie</div>
+  <a href="mailto:mementos.memorie@gmail.com">📧&nbsp;mementos.memorie@gmail.com</a>
+  <a href="tel:+33634044117">📞&nbsp;06&nbsp;34&nbsp;04&nbsp;41&nbsp;17</a>
+</div>
+
+<!-- Charte d'utilisation & droit à l'image (porté de la soirée) -->
+<div class="modal-bg" id="charteModal" onclick="dismissCharte()">
+  <div class="modal charte-modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Charte d'utilisation &amp; droit à l'image</div>
+    <div class="charte-text">
+      <h4>1. Objet</h4>
+      <p>Ce site permet aux participants de l'événement de partager leurs photos et vidéos entre eux, en souvenir.</p>
+      <h4>2. Droit à l'image</h4>
+      <p>En publiant un contenu, vous certifiez avoir obtenu l'accord des personnes identifiables qui y figurent. Toute personne peut, à tout moment, demander le retrait d'un contenu sur lequel elle apparaît.</p>
+      <h4>3. Bon usage</h4>
+      <p>Seuls les contenus respectueux sont autorisés. Sont notamment interdits les contenus offensants, discriminatoires, à caractère sexuel, violents, diffamatoires, ou portant atteinte à la dignité, à la vie privée ou à la réputation d'autrui. Tout comportement de harcèlement est proscrit.</p>
+      <h4>4. Données personnelles (RGPD)</h4>
+      <p><strong>Responsable :</strong> l'organisateur de l'événement.<br>
+      <strong>Finalité :</strong> permettre le partage de souvenirs entre les participants.<br>
+      <strong>Base légale :</strong> votre consentement.<br>
+      <strong>Destinataires :</strong> les participants ayant accès au site.<br>
+      <strong>Conservation :</strong> les contenus sont conservés le temps de l'événement, puis supprimés à sa clôture.<br>
+      <strong>Vos droits</strong> (accès, rectification, effacement, opposition) et tout signalement : <a href="mailto:mementos.memorie@gmail.com">mementos.memorie@gmail.com</a>.</p>
+      <h4>5. Usage réservé</h4>
+      <p>Les photos et vidéos sont destinées au cadre privé de l'événement. Toute rediffusion publique ou usage commercial est interdit sans accord.</p>
+      <h4>6. Acceptation</h4>
+      <p>L'utilisation de ce site et l'envoi de tout contenu valent acceptation de la présente charte.</p>
+    </div>
+    <div class="modal-btns"><button class="modal-confirm" onclick="dismissCharte()">Fermer</button></div>
+  </div>
+</div>
+
+<script>
+/* Contact + Charte — portés de la soirée */
+function toggleContact(e){ if(e) e.stopPropagation(); const pop=document.getElementById('contactPop'); const btn=document.getElementById('contactBtn'); if(!pop) return; const open=!pop.classList.contains('open'); pop.classList.toggle('open',open); if(btn) btn.setAttribute('aria-expanded',open?'true':'false'); }
+function closeContact(){ const pop=document.getElementById('contactPop'); const btn=document.getElementById('contactBtn'); if(pop) pop.classList.remove('open'); if(btn) btn.setAttribute('aria-expanded','false'); }
+document.addEventListener('click', function(ev){ const pop=document.getElementById('contactPop'); if(!pop||!pop.classList.contains('open')) return; if(pop.contains(ev.target)||(ev.target.closest&&ev.target.closest('#contactBtn'))) return; closeContact(); });
+let _charteGate=false;
+function openCharte(asGate){ _charteGate=!!asGate; const m=document.getElementById('charteModal'); if(m) m.classList.add('open'); }
+function dismissCharte(){ if(_charteGate) return; const m=document.getElementById('charteModal'); if(m) m.classList.remove('open'); }
+document.addEventListener('keydown', function(e){ if(e.key!=='Escape') return; const pop=document.getElementById('contactPop'); if(pop&&pop.classList.contains('open')){ closeContact(); return; } const ch=document.getElementById('charteModal'); if(ch&&ch.classList.contains('open')){ dismissCharte(); } });
 </script>
 
 </body>
